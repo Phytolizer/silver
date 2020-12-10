@@ -1,2 +1,2 @@
 [workspace]
-members = ["silver"]
+members = ["silver", "silver-language"]
