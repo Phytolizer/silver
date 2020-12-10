@@ -1,7 +1,7 @@
 use std::io::{self, BufRead, BufReader, Write};
 
 use crossterm::{
-    style::{Color, ResetColor, SetForegroundColor},
+    style::{Attribute, Color, ResetColor, SetAttribute, SetForegroundColor},
     terminal::{Clear, ClearType},
     ExecutableCommand,
 };
@@ -17,10 +17,13 @@ fn main() -> anyhow::Result<()> {
     let mut view_options = ViewOptions::default();
 
     loop {
+        stdout.execute(SetForegroundColor(Color::Yellow))?;
+        stdout.execute(SetAttribute(Attribute::Bold))?;
         write!(stdout, "silver ")?;
         stdout.execute(SetForegroundColor(Color::Green))?;
         write!(stdout, "➤")?;
         stdout.execute(ResetColor)?;
+        stdout.execute(SetAttribute(Attribute::Reset))?;
         write!(stdout, " ")?;
         stdout.flush()?;
 
