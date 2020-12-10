@@ -5,6 +5,7 @@ use crossterm::{
     terminal::{Clear, ClearType},
     ExecutableCommand,
 };
+use silver_language::analysis::syntax::lexer::Lexer;
 use view_options::ViewOptions;
 
 mod view_options;
@@ -57,7 +58,14 @@ fn main() -> anyhow::Result<()> {
         }
 
         // evaluate the line
-        writeln!(stdout, "Evaluating '{}'", line)?;
+        stdout.execute(SetForegroundColor(Color::Blue))?;
+        write!(stdout, "Executing")?;
+        stdout.execute(ResetColor)?;
+        writeln!(stdout, " '{}'", line.trim())?;
+        let tokens = Lexer::get_tokens(line.trim());
+        for token in tokens {
+            writeln!(stdout, "{}", token)?;
+        }
     }
     Ok(())
 }

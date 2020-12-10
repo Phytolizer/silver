@@ -184,6 +184,7 @@ dependencies = [
  "anyhow",
  "crossterm",
  "parking_lot",
+ "silver-language",
 ]
 
 [[package]]
