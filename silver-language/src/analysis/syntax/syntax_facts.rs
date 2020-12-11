@@ -7,7 +7,10 @@ pub trait Operator {
 
 impl Operator for SyntaxKind {
     fn unary_operator_precedence(&self) -> usize {
-        todo!()
+        match self {
+            SyntaxKind::PlusToken | SyntaxKind::MinusToken => 3,
+            _ => 0,
+        }
     }
 
     fn binary_operator_precedence(&self) -> usize {
