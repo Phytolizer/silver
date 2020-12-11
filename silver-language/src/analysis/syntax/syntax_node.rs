@@ -2,6 +2,7 @@ use crate::analysis::silver_value::SilverValue;
 
 use super::{expression_syntax::ExpressionSyntax, syntax_kind::SyntaxKind};
 
+#[allow(dead_code)]
 pub enum SyntaxNode<'source> {
     Expression(ExpressionSyntax<'source>),
 }

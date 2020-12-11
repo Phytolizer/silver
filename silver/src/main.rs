@@ -5,10 +5,7 @@ use crossterm::{
     terminal::{Clear, ClearType},
     ExecutableCommand,
 };
-use silver_language::analysis::{
-    evaluator::Evaluator,
-    syntax::{lexer::Lexer, syntax_tree::SyntaxTree},
-};
+use silver_language::analysis::{evaluator::Evaluator, syntax::syntax_tree::SyntaxTree};
 use view_options::ViewOptions;
 
 mod view_options;
