@@ -1,6 +1,7 @@
 mod binding;
 pub mod compilation;
 pub mod diagnostic;
+pub mod diagnostic_kind;
 pub mod errors;
 pub mod evaluator;
 pub mod silver_type;

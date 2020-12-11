@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, iter::Peekable};
 
+use crate::analysis::silver_type::SilverType;
 use crate::analysis::{errors::error_reporter::ErrorReporter, silver_value::SilverValue};
 
 use super::{syntax_facts, syntax_kind::SyntaxKind, syntax_token::SyntaxToken};
@@ -142,7 +143,7 @@ impl<'source> Lexer {
         let parsed = match text.parse() {
             Ok(p) => p,
             Err(_) => {
-                error_reporter.report_invalid_number(start..position, text, "i128");
+                error_reporter.report_invalid_number(start..position, text, SilverType::Integer);
                 return None;
             }
         };
@@ -202,15 +203,16 @@ impl<'source> Lexer {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+    use proptest::prelude::*;
+    use strum::IntoEnumIterator;
+
     use crate::analysis::errors::{
         null_error_reporter::NullErrorReporter, string_error_reporter::StringErrorReporter,
     };
 
     use super::syntax_facts::SyntaxKindWithText;
     use super::*;
-    use pretty_assertions::assert_eq;
-    use proptest::prelude::*;
-    use strum::IntoEnumIterator;
 
     proptest! {
         #[test]

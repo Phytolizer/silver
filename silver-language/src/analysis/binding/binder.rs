@@ -79,7 +79,7 @@ impl<'reporter> Binder<'reporter> {
         } else {
             self.error_reporter.report_undefined_binary_operator(
                 operator.span(),
-                operator.text(),
+                operator.clone(),
                 left.ty(),
                 right.ty(),
             );
@@ -103,7 +103,7 @@ impl<'reporter> Binder<'reporter> {
         } else {
             self.error_reporter.report_undefined_unary_operator(
                 operator.span(),
-                operator.text(),
+                operator.clone(),
                 operand.ty(),
             );
             operand
