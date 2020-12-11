@@ -184,7 +184,12 @@ dependencies = [
  "anyhow",
  "crossterm",
  "parking_lot",
+ "silver-language",
 ]
+
+[[package]]
+name = "silver-language"
+version = "0.1.0"
 
 [[package]]
 name = "smallvec"
