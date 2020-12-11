@@ -7,6 +7,7 @@ use super::{
 
 pub struct SyntaxTree<'source> {
     root: ExpressionSyntax<'source>,
+    // TODO the end-of-file token will be used for diagnostics
     #[allow(dead_code)]
     end_of_file_token: SyntaxToken<'source>,
 }
