@@ -61,6 +61,12 @@ impl Evaluator {
             BoundBinaryOperatorKind::Division => Some(SilverValue::Integer(
                 left.unwrap().as_integer().unwrap() / right.unwrap().as_integer().unwrap(),
             )),
+            BoundBinaryOperatorKind::LogicalAnd => Some(SilverValue::Boolean(
+                left.unwrap().as_boolean().unwrap() && right.unwrap().as_boolean().unwrap(),
+            )),
+            BoundBinaryOperatorKind::LogicalOr => Some(SilverValue::Boolean(
+                left.unwrap().as_boolean().unwrap() || right.unwrap().as_boolean().unwrap(),
+            )),
         }
     }
 
@@ -74,6 +80,9 @@ impl Evaluator {
             BoundUnaryOperatorKind::Identity => operand,
             BoundUnaryOperatorKind::Negation => Some(SilverValue::Integer(
                 -operand.unwrap().as_integer().unwrap(),
+            )),
+            BoundUnaryOperatorKind::LogicalNegation => Some(SilverValue::Boolean(
+                !operand.unwrap().as_boolean().unwrap(),
             )),
         }
     }

@@ -18,6 +18,9 @@ pub enum SyntaxKind {
     SlashToken,
     OpenParenthesisToken,
     CloseParenthesisToken,
+    BangToken,
+    AmpersandAmpersandToken,
+    PipePipeToken,
 
     // Keywords
     TrueKeyword,

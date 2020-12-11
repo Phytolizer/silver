@@ -70,21 +70,29 @@ impl<'reporter> Binder<'reporter> {
         left_type: SilverType,
         right_type: SilverType,
     ) -> Option<BoundBinaryOperator> {
-        if left_type != SilverType::Integer || right_type != SilverType::Integer {
-            self.error_reporter.report_error(format!(
-                "Binary operator '{}' is not defined for types '{}' and '{}'",
-                operator.text(),
-                left_type,
-                right_type
-            ));
-            return None;
-        }
-        let kind = match operator.kind() {
-            SyntaxKind::PlusToken => BoundBinaryOperatorKind::Addition,
-            SyntaxKind::MinusToken => BoundBinaryOperatorKind::Subtraction,
-            SyntaxKind::StarToken => BoundBinaryOperatorKind::Multiplication,
-            SyntaxKind::SlashToken => BoundBinaryOperatorKind::Division,
-            _ => panic!("unexpected binary operator {}", operator.kind()),
+        if left_type != SilverType::Integer || right_type != SilverType::Integer {}
+        let kind = match (left_type, right_type) {
+            (SilverType::Integer, SilverType::Integer) => match operator.kind() {
+                SyntaxKind::PlusToken => BoundBinaryOperatorKind::Addition,
+                SyntaxKind::MinusToken => BoundBinaryOperatorKind::Subtraction,
+                SyntaxKind::StarToken => BoundBinaryOperatorKind::Multiplication,
+                SyntaxKind::SlashToken => BoundBinaryOperatorKind::Division,
+                _ => return None,
+            },
+            (SilverType::Boolean, SilverType::Boolean) => match operator.kind() {
+                SyntaxKind::AmpersandAmpersandToken => BoundBinaryOperatorKind::LogicalAnd,
+                SyntaxKind::PipePipeToken => BoundBinaryOperatorKind::LogicalOr,
+                _ => return None,
+            }
+            _ => {
+                self.error_reporter.report_error(format!(
+                    "Binary operator '{}' is not defined for types '{}' and '{}'",
+                    operator.text(),
+                    left_type,
+                    right_type
+                ));
+                return None;
+            }
         };
         Some(BoundBinaryOperator::new(kind))
     }
@@ -113,18 +121,24 @@ impl<'reporter> Binder<'reporter> {
         operator: &SyntaxToken,
         operand_type: SilverType,
     ) -> Option<BoundUnaryOperator> {
-        if operand_type != SilverType::Integer {
-            self.error_reporter.report_error(format!(
-                "Unary operator '{}' is not defined for type '{}'",
-                operator.text(),
-                operand_type
-            ));
-            return None;
-        }
-        let kind = match operator.kind() {
-            SyntaxKind::PlusToken => BoundUnaryOperatorKind::Identity,
-            SyntaxKind::MinusToken => BoundUnaryOperatorKind::Negation,
-            _ => panic!("unexpected unary operator {}", operator.kind()),
+        let kind = match operand_type {
+            SilverType::Integer => match operator.kind() {
+                SyntaxKind::PlusToken => BoundUnaryOperatorKind::Identity,
+                SyntaxKind::MinusToken => BoundUnaryOperatorKind::Negation,
+                _ => return None,
+            },
+            SilverType::Boolean => match operator.kind() {
+                SyntaxKind::BangToken => BoundUnaryOperatorKind::LogicalNegation,
+                _ => return None,
+            },
+            _ => {
+                self.error_reporter.report_error(format!(
+                    "Unary operator '{}' is not defined for type '{}'",
+                    operator.text(),
+                    operand_type
+                ));
+                return None;
+            }
         };
         Some(BoundUnaryOperator::new(kind))
     }

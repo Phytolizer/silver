@@ -4,4 +4,5 @@ use derive_more::Display;
 pub(crate) enum BoundUnaryOperatorKind {
     Identity,
     Negation,
+    LogicalNegation,
 }
