@@ -5,7 +5,10 @@ use crossterm::{
     terminal::{Clear, ClearType},
     ExecutableCommand,
 };
-use silver_language::analysis::syntax::{lexer::Lexer, syntax_tree::SyntaxTree};
+use silver_language::analysis::{
+    evaluator::Evaluator,
+    syntax::{lexer::Lexer, syntax_tree::SyntaxTree},
+};
 use view_options::ViewOptions;
 
 mod view_options;
@@ -66,7 +69,11 @@ fn main() -> anyhow::Result<()> {
         stdout.execute(ResetColor)?;
         writeln!(stdout, " '{}'", line.trim())?;
         let parse_tree = SyntaxTree::parse(line.trim());
-        parse_tree.pretty_print(&mut stdout)?;
+        if view_options.show_tree {
+            parse_tree.pretty_print(&mut stdout)?;
+        }
+        let evaluator = Evaluator::new(parse_tree);
+        writeln!(stdout, "{}", evaluator.evaluate().unwrap())?;
     }
     Ok(())
 }

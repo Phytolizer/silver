@@ -25,6 +25,10 @@ impl<'source> SyntaxTree<'source> {
         Parser::parse(text)
     }
 
+    pub(crate) fn root(&self) -> &ExpressionSyntax {
+        &self.root
+    }
+
     pub fn pretty_print(&self, writer: &mut dyn Write) -> io::Result<()> {
         self.pretty_print_recursive(&self.root, writer, String::new(), true)
     }
