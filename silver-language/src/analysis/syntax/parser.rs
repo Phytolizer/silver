@@ -21,12 +21,16 @@ impl<'source> Parser<'source> {
             .cloned()
             .collect();
         let mut parser = Self::new(tokens);
-        let expression = parser.parse_expression(0);
+        let expression = parser.parse_expression();
         let end_of_file = parser.match_token(SyntaxKind::EndOfFileToken);
         SyntaxTree::new(expression, end_of_file)
     }
 
-    fn parse_expression(&mut self, parent_precedence: usize) -> ExpressionSyntax<'source> {
+    fn parse_expression(&mut self) -> ExpressionSyntax<'source> {
+        self.parse_binary_expression(0)
+    }
+
+    fn parse_binary_expression(&mut self, parent_precedence: usize) -> ExpressionSyntax<'source> {
         let mut left = self.parse_primary_expression();
 
         loop {
@@ -36,7 +40,7 @@ impl<'source> Parser<'source> {
             }
 
             let operator = self.next_token();
-            let right = self.parse_expression(precedence);
+            let right = self.parse_binary_expression(precedence);
             left = ExpressionSyntax::Binary {
                 left: Box::new(left),
                 operator,
@@ -50,7 +54,7 @@ impl<'source> Parser<'source> {
     fn parse_primary_expression(&mut self) -> ExpressionSyntax<'source> {
         if self.check_token(&[SyntaxKind::OpenParenthesisToken]) {
             let open_parenthesis_token = self.next_token();
-            let expression = self.parse_expression(0);
+            let expression = self.parse_expression();
             let close_parenthesis_token = self.match_token(SyntaxKind::CloseParenthesisToken);
             return ExpressionSyntax::Parenthesized {
                 open_parenthesis_token,
