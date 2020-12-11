@@ -88,7 +88,7 @@ fn main() -> anyhow::Result<()> {
                 let suffix = &line[error.span().end..];
 
                 stdout.execute(ResetColor)?;
-                write!(stdout, "{}", prefix)?;
+                write!(stdout, "    {}", prefix)?;
                 stdout.execute(SetForegroundColor(Color::Red))?;
                 write!(stdout, "{}", highlight)?;
                 stdout.execute(ResetColor)?;
