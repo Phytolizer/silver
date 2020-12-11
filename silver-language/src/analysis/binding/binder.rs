@@ -77,12 +77,12 @@ impl<'reporter> Binder<'reporter> {
                 right: Box::new(right),
             }
         } else {
-            self.error_reporter.report_error(format!(
-                "Binary operator '{}' is not defined for types '{}' and '{}'",
+            self.error_reporter.report_undefined_binary_operator(
+                operator.span(),
                 operator.text(),
                 left.ty(),
-                right.ty()
-            ));
+                right.ty(),
+            );
             left
         }
     }
@@ -101,11 +101,11 @@ impl<'reporter> Binder<'reporter> {
                 operand: Box::new(operand),
             }
         } else {
-            self.error_reporter.report_error(format!(
-                "Unary operator '{}' is not defined for type '{}'",
+            self.error_reporter.report_undefined_unary_operator(
+                operator.span(),
                 operator.text(),
-                operand.ty()
-            ));
+                operand.ty(),
+            );
             operand
         }
     }

@@ -6,8 +6,8 @@ use crossterm::{
     ExecutableCommand,
 };
 use silver_language::analysis::{
+    compilation::Compilation,
     errors::{error_reporter::ErrorReporter, string_error_reporter::StringErrorReporter},
-    evaluator::Evaluator,
     syntax::syntax_tree::SyntaxTree,
 };
 use view_options::ViewOptions;
@@ -76,15 +76,26 @@ fn main() -> anyhow::Result<()> {
         if view_options.show_tree {
             parse_tree.pretty_print(&mut stdout)?;
         }
-        let evaluator = Evaluator::new(parse_tree, &mut error_reporter);
+        let mut compilation = Compilation::new(parse_tree, &mut error_reporter);
+        let value = compilation.evaluate();
         if error_reporter.had_error() {
-            stdout.execute(SetForegroundColor(Color::Red))?;
             for error in error_reporter.errors() {
-                writeln!(stdout, "ERROR: {}", error)?;
+                stdout.execute(SetForegroundColor(Color::Red))?;
+                writeln!(stdout, "ERROR: {}", error.message())?;
+
+                let prefix = &line[..error.span().start];
+                let highlight = &line[error.span()];
+                let suffix = &line[error.span().end..];
+
+                stdout.execute(ResetColor)?;
+                write!(stdout, "{}", prefix)?;
+                stdout.execute(SetForegroundColor(Color::Red))?;
+                write!(stdout, "{}", highlight)?;
+                stdout.execute(ResetColor)?;
+                write!(stdout, "{}", suffix)?;
             }
-            stdout.execute(ResetColor)?;
         } else {
-            writeln!(stdout, "{}", evaluator.evaluate().unwrap())?;
+            writeln!(stdout, "{}", value.unwrap())?;
         }
     }
     Ok(())

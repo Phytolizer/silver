@@ -109,7 +109,7 @@ impl<'source> Lexer {
         if iterator.peek().unwrap().0 == start_pos {
             iterator.next();
         }
-        error_reporter.report_error(format!("Bad character in input: '{}'", start_c));
+        error_reporter.report_invalid_character(start_pos..start_pos + 1, start_c);
         Self::fixed_token(start_pos, SyntaxKind::BadToken, "")
     }
 
@@ -142,7 +142,7 @@ impl<'source> Lexer {
         let parsed = match text.parse() {
             Ok(p) => p,
             Err(_) => {
-                error_reporter.report_error(format!("Numeric literal '{}' is invalid", text));
+                error_reporter.report_invalid_number(start..position, text, "i128");
                 return None;
             }
         };

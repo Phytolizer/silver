@@ -1,7 +1,8 @@
 use super::error_reporter::ErrorReporter;
+use crate::analysis::diagnostic::Diagnostic;
 
 pub struct StringErrorReporter {
-    errors: Vec<String>,
+    errors: Vec<Diagnostic>,
 }
 
 impl StringErrorReporter {
@@ -17,7 +18,7 @@ impl Default for StringErrorReporter {
 }
 
 impl ErrorReporter for StringErrorReporter {
-    fn report_error(&mut self, error: String) {
+    fn report_error(&mut self, error: Diagnostic) {
         self.errors.push(error);
     }
 
@@ -25,7 +26,7 @@ impl ErrorReporter for StringErrorReporter {
         !self.errors.is_empty()
     }
 
-    fn errors(&self) -> &[String] {
+    fn errors(&self) -> &[Diagnostic] {
         &self.errors
     }
 

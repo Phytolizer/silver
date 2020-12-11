@@ -120,11 +120,11 @@ impl<'source, 'reporter> Parser<'source, 'reporter> {
         if self.current().kind() == kind {
             self.next_token()
         } else {
-            self.error_reporter.report_error(format!(
-                "Unexpected token <{}>, expected <{}>",
+            self.error_reporter.report_unexpected_token(
+                self.current().span(),
                 self.current().kind(),
-                kind
-            ));
+                kind,
+            );
             SyntaxToken::new(kind, self.tokens[0].position(), "", None)
         }
     }
