@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, strum_macros::EnumIter)]
 pub enum SyntaxKind {
     // Special tokens
     BadToken,
@@ -23,6 +23,7 @@ pub enum SyntaxKind {
     PipePipeToken,
     EqualsEqualsToken,
     BangEqualsToken,
+    EqualsToken,
 
     // Keywords
     TrueKeyword,
@@ -36,6 +37,8 @@ pub enum SyntaxKind {
     UnaryExpression,
     BinaryExpression,
     ParenthesizedExpression,
+    NameExpression,
+    AssignmentExpression,
 }
 
 impl Display for SyntaxKind {

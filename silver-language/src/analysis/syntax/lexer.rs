@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, iter::Peekable};
 
+use crate::analysis::silver_type::SilverType;
 use crate::analysis::{errors::error_reporter::ErrorReporter, silver_value::SilverValue};
 
 use super::{syntax_facts, syntax_kind::SyntaxKind, syntax_token::SyntaxToken};
@@ -93,6 +94,8 @@ impl<'source> Lexer {
                 if iterator.peek().map(|&(_, c)| c == '=').unwrap_or(false) {
                     iterator.next();
                     return Self::fixed_token(pos, SyntaxKind::EqualsEqualsToken, "==");
+                } else {
+                    return Self::fixed_token(pos, SyntaxKind::EqualsToken, "=");
                 }
             }
             None => {
@@ -106,10 +109,10 @@ impl<'source> Lexer {
             _ => {}
         }
 
-        if iterator.peek().unwrap().0 == start_pos {
+        if iterator.peek().map(|&(i, _)| i).unwrap_or(0) == start_pos {
             iterator.next();
         }
-        error_reporter.report_error(format!("Bad character in input: '{}'", start_c));
+        error_reporter.report_invalid_character(start_pos..start_pos + 1, start_c);
         Self::fixed_token(start_pos, SyntaxKind::BadToken, "")
     }
 
@@ -142,7 +145,7 @@ impl<'source> Lexer {
         let parsed = match text.parse() {
             Ok(p) => p,
             Err(_) => {
-                error_reporter.report_error(format!("Numeric literal '{}' is invalid", text));
+                error_reporter.report_invalid_number(start..position, text, SilverType::Integer);
                 return None;
             }
         };
@@ -197,5 +200,225 @@ impl<'source> Lexer {
         let text = &text[start..position];
         let kind = syntax_facts::keyword_kind(text);
         Some(SyntaxToken::new(kind, start, text, None))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+    use proptest::prelude::*;
+    use strum::IntoEnumIterator;
+
+    use crate::analysis::errors::{
+        null_error_reporter::NullErrorReporter, string_error_reporter::StringErrorReporter,
+    };
+
+    use super::syntax_facts::SyntaxKindWithText;
+    use super::*;
+
+    proptest! {
+        #[test]
+        fn no_crash(s in "\\PC*") {
+            Lexer::get_tokens(&s, &mut NullErrorReporter::new());
+        }
+    }
+
+    fn get_all_valid_tokens() -> Vec<(&'static str, SyntaxKind)> {
+        let static_tokens = SyntaxKind::iter()
+            .filter_map(|k| {
+                if let Some(t) = k.get_text() {
+                    Some((t, k))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        let dynamic_tokens = vec![
+            ("a", SyntaxKind::IdentifierToken),
+            ("abc", SyntaxKind::IdentifierToken),
+            ("abcABC", SyntaxKind::IdentifierToken),
+            ("1", SyntaxKind::NumberToken),
+            ("123", SyntaxKind::NumberToken),
+        ];
+        static_tokens
+            .iter()
+            .cloned()
+            .chain(dynamic_tokens.iter().cloned())
+            .collect()
+    }
+
+    fn get_all_separator_tokens() -> Vec<(&'static str, SyntaxKind)> {
+        vec![
+            (" ", SyntaxKind::WhitespaceToken),
+            ("  ", SyntaxKind::WhitespaceToken),
+            ("\r", SyntaxKind::WhitespaceToken),
+            ("\n", SyntaxKind::WhitespaceToken),
+            ("\r\n", SyntaxKind::WhitespaceToken),
+        ]
+    }
+
+    fn lexer_lexes_token(input: &str, kind: SyntaxKind) {
+        let mut error_reporter = StringErrorReporter::new();
+        let tokens = Lexer::get_tokens(input, &mut error_reporter);
+        assert!(
+            !error_reporter.had_error(),
+            "'{}' to lex successfully",
+            input
+        );
+        assert_eq!(2, tokens.len(), "'{}' to result in single token", input);
+        assert_eq!(
+            kind,
+            tokens[0].kind(),
+            "'{}' to result in token with kind {}",
+            input,
+            kind
+        );
+        assert_eq!(input, tokens[0].text(), "'{}' to round-trip", input);
+    }
+
+    #[test]
+    fn lexes_single_token() {
+        for (input, kind) in get_all_valid_tokens() {
+            lexer_lexes_token(input, kind);
+        }
+    }
+
+    fn token_pair_requires_separator(t1kind: SyntaxKind, t2kind: SyntaxKind) -> bool {
+        let t1_is_keyword = t1kind.to_string().ends_with("Keyword");
+        let t2_is_keyword = t2kind.to_string().ends_with("Keyword");
+
+        t1_is_keyword && t2_is_keyword
+            || t1_is_keyword && t2kind == SyntaxKind::IdentifierToken
+            || t1kind == SyntaxKind::IdentifierToken && t2_is_keyword
+            || t1kind == SyntaxKind::IdentifierToken && t2kind == SyntaxKind::IdentifierToken
+            || t1kind == SyntaxKind::BangToken && t2kind == SyntaxKind::EqualsEqualsToken
+            || t1kind == SyntaxKind::BangToken && t2kind == SyntaxKind::EqualsToken
+            || t1kind == SyntaxKind::EqualsToken && t2kind == SyntaxKind::EqualsEqualsToken
+            || t1kind == SyntaxKind::EqualsToken && t2kind == SyntaxKind::EqualsToken
+            || t1kind == SyntaxKind::NumberToken && t2kind == SyntaxKind::NumberToken
+    }
+
+    fn lexer_lexes_token_pair(t1text: &str, t1kind: SyntaxKind, t2text: &str, t2kind: SyntaxKind) {
+        let mut error_reporter = StringErrorReporter::new();
+        let input = format!("{}{}", t1text, t2text);
+        let tokens = Lexer::get_tokens(&input, &mut error_reporter);
+        for error in error_reporter.errors() {
+            println!("{}", error.message());
+        }
+        assert!(
+            !error_reporter.had_error(),
+            "'{}' to lex successfully",
+            input
+        );
+        assert_eq!(
+            3,
+            tokens.len(),
+            "{} followed by {} to result in 2 tokens",
+            t1kind,
+            t2kind
+        );
+        assert_eq!(
+            t1kind,
+            tokens[0].kind(),
+            "'{}' to start with {}",
+            input,
+            t1kind
+        );
+        assert_eq!(
+            t2kind,
+            tokens[1].kind(),
+            "'{}' to end with {}",
+            input,
+            t2kind
+        );
+        assert_eq!(
+            input,
+            format!("{}{}", tokens[0].text(), tokens[1].text()),
+            "'{}' to round-trip",
+            input
+        );
+    }
+
+    fn lexer_lexes_token_pair_with_separator(
+        t1text: &str,
+        t1kind: SyntaxKind,
+        separator_text: &str,
+        separator_kind: SyntaxKind,
+        t2text: &str,
+        t2kind: SyntaxKind,
+    ) {
+        let mut error_reporter = StringErrorReporter::new();
+        let input = format!("{}{}{}", t1text, separator_text, t2text);
+        let tokens = Lexer::get_tokens(&input, &mut error_reporter);
+        for error in error_reporter.errors() {
+            println!("{}", error.message());
+        }
+        assert!(
+            !error_reporter.had_error(),
+            "'{}' to lex successfully",
+            input
+        );
+        assert_eq!(
+            4,
+            tokens.len(),
+            "{} : {} : {} to lex to 3 tokens",
+            t1kind,
+            separator_kind,
+            t2kind
+        );
+        assert_eq!(
+            t1kind,
+            tokens[0].kind(),
+            "'{}' to start with {}",
+            input,
+            t1kind
+        );
+        assert_eq!(
+            separator_kind,
+            tokens[1].kind(),
+            "'{}' to be separated by {}",
+            input,
+            separator_kind
+        );
+        assert_eq!(
+            t2kind,
+            tokens[2].kind(),
+            "'{}' to end with {}",
+            input,
+            t2kind
+        );
+        assert_eq!(
+            input,
+            format!(
+                "{}{}{}",
+                tokens[0].text(),
+                tokens[1].text(),
+                tokens[2].text()
+            ),
+            "'{}' to round-trip",
+            input
+        );
+    }
+
+    #[test]
+    fn lexes_token_pairs() {
+        for (t1text, t1kind) in get_all_valid_tokens() {
+            for (t2text, t2kind) in get_all_valid_tokens() {
+                if token_pair_requires_separator(t1kind, t2kind) {
+                    for (separator_text, separator_kind) in get_all_separator_tokens() {
+                        lexer_lexes_token_pair_with_separator(
+                            t1text,
+                            t1kind,
+                            separator_text,
+                            separator_kind,
+                            t2text,
+                            t2kind,
+                        );
+                    }
+                } else {
+                    lexer_lexes_token_pair(t1text, t1kind, t2text, t2kind);
+                }
+            }
+        }
     }
 }

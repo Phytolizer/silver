@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use crate::analysis::{
     errors::error_reporter::ErrorReporter,
     silver_value::SilverValue,
     syntax::{expression_syntax::ExpressionSyntax, syntax_token::SyntaxToken},
+    variable_symbol::VariableSymbol,
 };
 
 use super::{
@@ -9,13 +12,20 @@ use super::{
     bound_unary_operator::BoundUnaryOperator,
 };
 
-pub(crate) struct Binder<'reporter> {
+pub(crate) struct Binder<'reporter, 'variables> {
     error_reporter: &'reporter mut dyn ErrorReporter,
+    variables: &'variables mut HashMap<VariableSymbol, SilverValue>,
 }
 
-impl<'reporter> Binder<'reporter> {
-    pub(crate) fn new(error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
-        Self { error_reporter }
+impl<'reporter, 'variables> Binder<'reporter, 'variables> {
+    pub(crate) fn new(
+        variables: &'variables mut HashMap<VariableSymbol, SilverValue>,
+        error_reporter: &'reporter mut dyn ErrorReporter,
+    ) -> Self {
+        Self {
+            error_reporter,
+            variables,
+        }
     }
 
     pub(crate) fn bind(&mut self, syntax: &ExpressionSyntax) -> BoundExpression {
@@ -45,6 +55,14 @@ impl<'reporter> Binder<'reporter> {
                 expression,
                 close_parenthesis_token,
             ),
+            ExpressionSyntax::Name { identifier_token } => {
+                self.bind_name_expression(identifier_token)
+            }
+            ExpressionSyntax::Assignment {
+                identifier_token,
+                expression,
+                ..
+            } => self.bind_assignment_expression(identifier_token, expression),
         }
     }
 
@@ -77,12 +95,12 @@ impl<'reporter> Binder<'reporter> {
                 right: Box::new(right),
             }
         } else {
-            self.error_reporter.report_error(format!(
-                "Binary operator '{}' is not defined for types '{}' and '{}'",
-                operator.text(),
+            self.error_reporter.report_undefined_binary_operator(
+                operator.span(),
+                operator.clone(),
                 left.ty(),
-                right.ty()
-            ));
+                right.ty(),
+            );
             left
         }
     }
@@ -101,11 +119,11 @@ impl<'reporter> Binder<'reporter> {
                 operand: Box::new(operand),
             }
         } else {
-            self.error_reporter.report_error(format!(
-                "Unary operator '{}' is not defined for type '{}'",
-                operator.text(),
-                operand.ty()
-            ));
+            self.error_reporter.report_undefined_unary_operator(
+                operator.span(),
+                operator.clone(),
+                operand.ty(),
+            );
             operand
         }
     }
@@ -119,5 +137,40 @@ impl<'reporter> Binder<'reporter> {
         close_parenthesis_token: &SyntaxToken,
     ) -> BoundExpression {
         self.bind_expression(expression)
+    }
+
+    fn bind_name_expression(&mut self, identifier_token: &SyntaxToken) -> BoundExpression {
+        let name = identifier_token.text();
+        let variable = self.variables.keys().find(|var| var.name() == name);
+        if let Some(variable) = variable {
+            BoundExpression::Variable {
+                variable: variable.clone(),
+            }
+        } else {
+            self.error_reporter
+                .report_undefined_name(identifier_token.span(), name);
+            BoundExpression::Literal {
+                value: Some(SilverValue::Integer(0)),
+            }
+        }
+    }
+
+    fn bind_assignment_expression(
+        &mut self,
+        identifier_token: &SyntaxToken,
+        expression: &ExpressionSyntax,
+    ) -> BoundExpression {
+        let name = identifier_token.text();
+        let bound_expression = self.bind_expression(expression);
+
+        let existing_variable = self.variables.keys().find(|v| v.name() == name);
+        if let Some(existing_variable) = existing_variable.cloned() {
+            self.variables.remove(&existing_variable);
+        }
+        let variable = VariableSymbol::new(name.to_string(), bound_expression.ty());
+        BoundExpression::Assignment {
+            variable,
+            expression: Box::new(bound_expression),
+        }
     }
 }

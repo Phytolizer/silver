@@ -5,6 +5,8 @@ pub(crate) enum BoundNodeKind {
     LiteralExpression,
     UnaryExpression,
     BinaryExpression,
+    VariableExpression,
+    AssignmentExpression,
     UnaryOperator,
     BinaryOperator,
 }

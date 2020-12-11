@@ -32,6 +32,32 @@ impl Operator for SyntaxKind {
     }
 }
 
+pub(crate) trait SyntaxKindWithText {
+    fn get_text(&self) -> Option<&'static str>;
+}
+
+impl SyntaxKindWithText for SyntaxKind {
+    fn get_text(&self) -> Option<&'static str> {
+        match self {
+            SyntaxKind::PlusToken => Some("+"),
+            SyntaxKind::MinusToken => Some("-"),
+            SyntaxKind::StarToken => Some("*"),
+            SyntaxKind::SlashToken => Some("/"),
+            SyntaxKind::OpenParenthesisToken => Some("("),
+            SyntaxKind::CloseParenthesisToken => Some(")"),
+            SyntaxKind::BangToken => Some("!"),
+            SyntaxKind::AmpersandAmpersandToken => Some("&&"),
+            SyntaxKind::PipePipeToken => Some("||"),
+            SyntaxKind::EqualsEqualsToken => Some("=="),
+            SyntaxKind::BangEqualsToken => Some("!="),
+            SyntaxKind::EqualsToken => Some("="),
+            SyntaxKind::TrueKeyword => Some("true"),
+            SyntaxKind::FalseKeyword => Some("false"),
+            _ => None,
+        }
+    }
+}
+
 pub(crate) fn keyword_kind(text: &str) -> SyntaxKind {
     match text {
         "true" => SyntaxKind::TrueKeyword,

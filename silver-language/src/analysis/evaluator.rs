@@ -1,33 +1,32 @@
+use std::collections::HashMap;
+
 use super::{
     binding::{
-        binder::Binder, bound_binary_operator::BoundBinaryOperator,
+        bound_binary_operator::BoundBinaryOperator,
         bound_binary_operator_kind::BoundBinaryOperatorKind, bound_expression::BoundExpression,
         bound_unary_operator::BoundUnaryOperator,
         bound_unary_operator_kind::BoundUnaryOperatorKind,
     },
-    errors::error_reporter::ErrorReporter,
     silver_value::SilverValue,
-    syntax::syntax_tree::SyntaxTree,
+    variable_symbol::VariableSymbol,
 };
 
-pub struct Evaluator {
-    bound_tree: BoundExpression,
+pub struct Evaluator<'variables> {
+    variables: &'variables mut HashMap<VariableSymbol, SilverValue>,
 }
 
-impl Evaluator {
-    pub fn new(syntax_tree: SyntaxTree, error_reporter: &mut dyn ErrorReporter) -> Self {
-        let mut binder = Binder::new(error_reporter);
-        let bound_tree = binder.bind(syntax_tree.root());
-        Self { bound_tree }
+impl<'variables> Evaluator<'variables> {
+    pub(crate) fn new(variables: &'variables mut HashMap<VariableSymbol, SilverValue>) -> Self {
+        Self { variables }
     }
 
-    pub fn evaluate(&self) -> Option<SilverValue> {
-        self.evaluate_expression(&self.bound_tree)
+    pub(crate) fn evaluate(&mut self, bound_tree: &BoundExpression) -> SilverValue {
+        self.evaluate_expression(bound_tree)
     }
 
-    fn evaluate_expression(&self, root: &BoundExpression) -> Option<SilverValue> {
+    fn evaluate_expression<'a>(&'a mut self, root: &'a BoundExpression) -> SilverValue {
         match root {
-            BoundExpression::Literal { value } => value.clone(),
+            BoundExpression::Literal { value } => value.clone().unwrap(),
             BoundExpression::Unary { operator, operand } => {
                 self.evaluate_unary_expression(operator, operand)
             }
@@ -36,56 +35,75 @@ impl Evaluator {
                 operator,
                 right,
             } => self.evaluate_binary_expression(left, operator, right),
+            BoundExpression::Variable { variable } => self.evaluate_variable_expression(variable),
+            BoundExpression::Assignment {
+                variable,
+                expression,
+            } => self.evaluate_assignment_expression(variable, expression),
         }
     }
 
+    fn evaluate_variable_expression(&self, variable: &VariableSymbol) -> SilverValue {
+        self.variables[variable].clone()
+    }
+
+    fn evaluate_assignment_expression(
+        &mut self,
+        variable: &VariableSymbol,
+        expression: &BoundExpression,
+    ) -> SilverValue {
+        let value = self.evaluate_expression(expression);
+        self.variables.insert(variable.clone(), value.clone());
+        value
+    }
+
     fn evaluate_binary_expression(
-        &self,
+        &mut self,
         left: &BoundExpression,
         operator: &BoundBinaryOperator,
         right: &BoundExpression,
-    ) -> Option<SilverValue> {
+    ) -> SilverValue {
         let left = self.evaluate_expression(left);
         let right = self.evaluate_expression(right);
 
         match operator.kind() {
-            BoundBinaryOperatorKind::Addition => Some(SilverValue::Integer(
-                left.unwrap().as_integer().unwrap() + right.unwrap().as_integer().unwrap(),
-            )),
-            BoundBinaryOperatorKind::Subtraction => Some(SilverValue::Integer(
-                left.unwrap().as_integer().unwrap() + right.unwrap().as_integer().unwrap(),
-            )),
-            BoundBinaryOperatorKind::Multiplication => Some(SilverValue::Integer(
-                left.unwrap().as_integer().unwrap() * right.unwrap().as_integer().unwrap(),
-            )),
-            BoundBinaryOperatorKind::Division => Some(SilverValue::Integer(
-                left.unwrap().as_integer().unwrap() / right.unwrap().as_integer().unwrap(),
-            )),
-            BoundBinaryOperatorKind::LogicalAnd => Some(SilverValue::Boolean(
-                left.unwrap().as_boolean().unwrap() && right.unwrap().as_boolean().unwrap(),
-            )),
-            BoundBinaryOperatorKind::LogicalOr => Some(SilverValue::Boolean(
-                left.unwrap().as_boolean().unwrap() || right.unwrap().as_boolean().unwrap(),
-            )),
-            BoundBinaryOperatorKind::Equality => Some(SilverValue::Boolean(left == right)),
-            BoundBinaryOperatorKind::Inequality => Some(SilverValue::Boolean(left != right)),
+            BoundBinaryOperatorKind::Addition => {
+                SilverValue::Integer(left.as_integer().unwrap() + right.as_integer().unwrap())
+            }
+            BoundBinaryOperatorKind::Subtraction => {
+                SilverValue::Integer(left.as_integer().unwrap() + right.as_integer().unwrap())
+            }
+            BoundBinaryOperatorKind::Multiplication => {
+                SilverValue::Integer(left.as_integer().unwrap() * right.as_integer().unwrap())
+            }
+            BoundBinaryOperatorKind::Division => {
+                SilverValue::Integer(left.as_integer().unwrap() / right.as_integer().unwrap())
+            }
+            BoundBinaryOperatorKind::LogicalAnd => {
+                SilverValue::Boolean(left.as_boolean().unwrap() && right.as_boolean().unwrap())
+            }
+            BoundBinaryOperatorKind::LogicalOr => {
+                SilverValue::Boolean(left.as_boolean().unwrap() || right.as_boolean().unwrap())
+            }
+            BoundBinaryOperatorKind::Equality => SilverValue::Boolean(left == right),
+            BoundBinaryOperatorKind::Inequality => SilverValue::Boolean(left != right),
         }
     }
 
     fn evaluate_unary_expression(
-        &self,
+        &mut self,
         operator: &BoundUnaryOperator,
         operand: &BoundExpression,
-    ) -> Option<SilverValue> {
+    ) -> SilverValue {
         let operand = self.evaluate_expression(operand);
         match operator.kind() {
             BoundUnaryOperatorKind::Identity => operand,
-            BoundUnaryOperatorKind::Negation => Some(SilverValue::Integer(
-                -operand.unwrap().as_integer().unwrap(),
-            )),
-            BoundUnaryOperatorKind::LogicalNegation => Some(SilverValue::Boolean(
-                !operand.unwrap().as_boolean().unwrap(),
-            )),
+            BoundUnaryOperatorKind::Negation => {
+                SilverValue::Integer(-operand.as_integer().unwrap())
+            }
+            BoundUnaryOperatorKind::LogicalNegation => {
+                SilverValue::Boolean(!operand.as_boolean().unwrap())
+            }
         }
     }
 }

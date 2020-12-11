@@ -1,4 +1,7 @@
-use std::io::{self, BufRead, BufReader, Write};
+use std::{
+    collections::HashMap,
+    io::{self, BufRead, BufReader, Write},
+};
 
 use crossterm::{
     style::{Attribute, Color, ResetColor, SetAttribute, SetForegroundColor},
@@ -6,9 +9,11 @@ use crossterm::{
     ExecutableCommand,
 };
 use silver_language::analysis::{
+    compilation::Compilation,
     errors::{error_reporter::ErrorReporter, string_error_reporter::StringErrorReporter},
-    evaluator::Evaluator,
+    silver_value::SilverValue,
     syntax::syntax_tree::SyntaxTree,
+    variable_symbol::VariableSymbol,
 };
 use view_options::ViewOptions;
 
@@ -20,6 +25,7 @@ fn main() -> anyhow::Result<()> {
     let mut line = String::new();
     let mut view_options = ViewOptions::default();
     let mut error_reporter = StringErrorReporter::new();
+    let mut variables = HashMap::<VariableSymbol, SilverValue>::new();
 
     loop {
         error_reporter.clear();
@@ -76,15 +82,28 @@ fn main() -> anyhow::Result<()> {
         if view_options.show_tree {
             parse_tree.pretty_print(&mut stdout)?;
         }
-        let evaluator = Evaluator::new(parse_tree, &mut error_reporter);
+        let mut compilation = Compilation::new(parse_tree, &mut error_reporter);
+        let value = compilation.evaluate(&mut variables);
         if error_reporter.had_error() {
-            stdout.execute(SetForegroundColor(Color::Red))?;
             for error in error_reporter.errors() {
-                writeln!(stdout, "ERROR: {}", error)?;
+                stdout.execute(SetForegroundColor(Color::Red))?;
+                writeln!(stdout)?;
+                writeln!(stdout, "ERROR: {}", error.message())?;
+
+                let prefix = &line[..error.span().start];
+                let highlight = &line[error.span()];
+                let suffix = &line[error.span().end..];
+
+                stdout.execute(ResetColor)?;
+                write!(stdout, "    {}", prefix)?;
+                stdout.execute(SetForegroundColor(Color::Red))?;
+                write!(stdout, "{}", highlight)?;
+                stdout.execute(ResetColor)?;
+                write!(stdout, "{}", suffix)?;
+                writeln!(stdout)?;
             }
-            stdout.execute(ResetColor)?;
         } else {
-            writeln!(stdout, "{}", evaluator.evaluate().unwrap())?;
+            writeln!(stdout, "{}", value.unwrap())?;
         }
     }
     Ok(())

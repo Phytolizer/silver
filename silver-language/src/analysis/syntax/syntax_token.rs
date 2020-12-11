@@ -1,15 +1,16 @@
 use std::fmt::Display;
 
-use crate::analysis::silver_value::SilverValue;
+use crate::analysis::{silver_value::SilverValue, text::text_span::TextSpan};
 
 use super::{syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SyntaxToken<'source> {
     kind: SyntaxKind,
     position: usize,
     text: &'source str,
     value: Option<SilverValue>,
+    span: TextSpan,
 }
 
 impl<'source> SyntaxNodeExt for SyntaxToken<'source> {
@@ -38,6 +39,7 @@ impl<'source> SyntaxToken<'source> {
             position,
             text,
             value,
+            span: position..position + text.len(),
         }
     }
 
@@ -55,6 +57,10 @@ impl<'source> SyntaxToken<'source> {
 
     pub fn value(&self) -> Option<&SilverValue> {
         self.value.as_ref()
+    }
+
+    pub fn span(&self) -> TextSpan {
+        self.span.clone()
     }
 }
 
