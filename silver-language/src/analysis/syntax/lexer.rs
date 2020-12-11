@@ -1,17 +1,20 @@
 use std::{collections::VecDeque, iter::Peekable};
 
-use crate::analysis::silver_value::SilverValue;
+use crate::analysis::{errors::error_reporter::ErrorReporter, silver_value::SilverValue};
 
 use super::{syntax_kind::SyntaxKind, syntax_token::SyntaxToken};
 
 pub struct Lexer;
 
 impl<'source> Lexer {
-    pub fn get_tokens(text: &'source str) -> VecDeque<SyntaxToken<'source>> {
+    pub fn get_tokens(
+        text: &'source str,
+        error_reporter: &mut dyn ErrorReporter,
+    ) -> VecDeque<SyntaxToken<'source>> {
         let mut tokens = VecDeque::new();
         let mut iterator = text.char_indices().peekable();
 
-        while let Some(token) = Self::next_token(text, &mut iterator) {
+        while let Some(token) = Self::next_token(text, &mut iterator, error_reporter) {
             let kind = token.kind();
             tokens.push_back(token);
             if kind == SyntaxKind::EndOfFileToken {
@@ -25,9 +28,12 @@ impl<'source> Lexer {
     fn next_token(
         text: &'source str,
         iterator: &mut Peekable<impl Iterator<Item = (usize, char)>>,
+        error_reporter: &mut dyn ErrorReporter,
     ) -> Option<SyntaxToken<'source>> {
         match iterator.peek() {
-            Some((_, c)) if c.is_numeric() => Self::read_number_token(text, iterator),
+            Some((_, c)) if c.is_numeric() => {
+                Self::read_number_token(text, iterator, error_reporter)
+            }
             Some((_, c)) if c.is_whitespace() => Self::read_whitespace_token(text, iterator),
             Some(&(pos, '+')) => {
                 iterator.next();
@@ -53,8 +59,8 @@ impl<'source> Lexer {
                 iterator.next();
                 Self::fixed_token(pos, SyntaxKind::CloseParenthesisToken, ")")
             }
-            Some(&(pos, _)) => {
-                iterator.next();
+            Some(&(pos, c)) => {
+                error_reporter.report_error(format!("Bad character in input: '{}'", c));
                 Self::fixed_token(pos, SyntaxKind::BadToken, "")
             }
             None => Some(SyntaxToken::new(
@@ -78,6 +84,7 @@ impl<'source> Lexer {
     fn read_number_token(
         text: &'source str,
         iterator: &mut Peekable<impl Iterator<Item = (usize, char)>>,
+        error_reporter: &mut dyn ErrorReporter,
     ) -> Option<SyntaxToken<'source>> {
         let (start, _) = iterator.next().unwrap();
         while let Some((_, c)) = iterator.peek() {
@@ -93,7 +100,10 @@ impl<'source> Lexer {
         let text = &text[start..position];
         let parsed = match text.parse() {
             Ok(p) => p,
-            Err(_) => return None,
+            Err(_) => {
+                error_reporter.report_error(format!("Numeric literal '{}' is invalid", text));
+                return None;
+            }
         };
         let value = Some(SilverValue::Integer(parsed));
         Some(SyntaxToken::new(

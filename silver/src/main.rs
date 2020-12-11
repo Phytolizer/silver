@@ -5,7 +5,11 @@ use crossterm::{
     terminal::{Clear, ClearType},
     ExecutableCommand,
 };
-use silver_language::analysis::{evaluator::Evaluator, syntax::syntax_tree::SyntaxTree};
+use silver_language::analysis::{
+    errors::{error_reporter::ErrorReporter, string_error_reporter::StringErrorReporter},
+    evaluator::Evaluator,
+    syntax::syntax_tree::SyntaxTree,
+};
 use view_options::ViewOptions;
 
 mod view_options;
@@ -15,8 +19,11 @@ fn main() -> anyhow::Result<()> {
     let mut reader = BufReader::new(io::stdin());
     let mut line = String::new();
     let mut view_options = ViewOptions::default();
+    let mut error_reporter = StringErrorReporter::new();
 
     loop {
+        error_reporter.clear();
+
         stdout.execute(SetForegroundColor(Color::Yellow))?;
         stdout.execute(SetAttribute(Attribute::Bold))?;
         write!(stdout, "silver ")?;
@@ -65,12 +72,20 @@ fn main() -> anyhow::Result<()> {
         write!(stdout, "Executing")?;
         stdout.execute(ResetColor)?;
         writeln!(stdout, " '{}'", line.trim())?;
-        let parse_tree = SyntaxTree::parse(line.trim());
+        let parse_tree = SyntaxTree::parse(line.trim(), &mut error_reporter);
         if view_options.show_tree {
             parse_tree.pretty_print(&mut stdout)?;
         }
-        let evaluator = Evaluator::new(parse_tree);
-        writeln!(stdout, "{}", evaluator.evaluate().unwrap())?;
+        if error_reporter.had_error() {
+            stdout.execute(SetForegroundColor(Color::Red))?;
+            for error in error_reporter.errors() {
+                writeln!(stdout, "ERROR: {}", error)?;
+            }
+            stdout.execute(ResetColor)?;
+        } else {
+            let evaluator = Evaluator::new(parse_tree);
+            writeln!(stdout, "{}", evaluator.evaluate().unwrap())?;
+        }
     }
     Ok(())
 }

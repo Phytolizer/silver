@@ -1,5 +1,7 @@
 use std::io::{self, Write};
 
+use crate::analysis::errors::error_reporter::ErrorReporter;
+
 use super::{
     expression_syntax::ExpressionSyntax, parser::Parser, syntax_node::SyntaxNodeExt,
     syntax_token::SyntaxToken,
@@ -12,7 +14,7 @@ pub struct SyntaxTree<'source> {
     end_of_file_token: SyntaxToken<'source>,
 }
 
-impl<'source> SyntaxTree<'source> {
+impl<'source, 'reporter> SyntaxTree<'source> {
     pub(crate) fn new(
         root: ExpressionSyntax<'source>,
         end_of_file_token: SyntaxToken<'source>,
@@ -23,8 +25,8 @@ impl<'source> SyntaxTree<'source> {
         }
     }
 
-    pub fn parse(text: &'source str) -> Self {
-        Parser::parse(text)
+    pub fn parse(text: &'source str, error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
+        Parser::parse(text, error_reporter)
     }
 
     pub(crate) fn root(&self) -> &ExpressionSyntax {

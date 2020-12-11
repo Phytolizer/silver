@@ -1,26 +1,38 @@
 use std::collections::VecDeque;
 
+use crate::analysis::errors::error_reporter::ErrorReporter;
+
 use super::{
     expression_syntax::ExpressionSyntax, lexer::Lexer, syntax_facts::Operator,
     syntax_kind::SyntaxKind, syntax_token::SyntaxToken, syntax_tree::SyntaxTree,
 };
 
-pub(crate) struct Parser<'source> {
+pub(crate) struct Parser<'source, 'reporter> {
     tokens: VecDeque<SyntaxToken<'source>>,
+    error_reporter: &'reporter mut dyn ErrorReporter,
 }
 
-impl<'source> Parser<'source> {
-    fn new(tokens: VecDeque<SyntaxToken<'source>>) -> Self {
-        Self { tokens }
+impl<'source, 'reporter> Parser<'source, 'reporter> {
+    fn new(
+        tokens: VecDeque<SyntaxToken<'source>>,
+        error_reporter: &'reporter mut dyn ErrorReporter,
+    ) -> Self {
+        Self {
+            tokens,
+            error_reporter,
+        }
     }
 
-    pub(crate) fn parse(text: &'source str) -> SyntaxTree<'source> {
-        let tokens = Lexer::get_tokens(text)
+    pub(crate) fn parse(
+        text: &'source str,
+        error_reporter: &'reporter mut dyn ErrorReporter,
+    ) -> SyntaxTree<'source> {
+        let tokens = Lexer::get_tokens(text, error_reporter)
             .iter()
             .filter(|t| t.kind() != SyntaxKind::WhitespaceToken && t.kind() != SyntaxKind::BadToken)
             .cloned()
             .collect();
-        let mut parser = Self::new(tokens);
+        let mut parser = Self::new(tokens, error_reporter);
         let expression = parser.parse_expression();
         let end_of_file = parser.match_token(SyntaxKind::EndOfFileToken);
         SyntaxTree::new(expression, end_of_file)
@@ -88,9 +100,14 @@ impl<'source> Parser<'source> {
     }
 
     fn match_token(&mut self, kind: SyntaxKind) -> SyntaxToken<'source> {
-        if self.tokens[0].kind() == kind {
+        if self.current().kind() == kind {
             self.next_token()
         } else {
+            self.error_reporter.report_error(format!(
+                "Unexpected token <{}>, expected <{}>",
+                self.current().kind(),
+                kind
+            ));
             SyntaxToken::new(kind, self.tokens[0].position(), "", None)
         }
     }
