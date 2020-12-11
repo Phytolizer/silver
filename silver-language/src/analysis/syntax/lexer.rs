@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::{collections::VecDeque, iter::Peekable};
 
 use crate::analysis::silver_value::SilverValue;
 
@@ -7,14 +7,14 @@ use super::{syntax_kind::SyntaxKind, syntax_token::SyntaxToken};
 pub struct Lexer;
 
 impl<'source> Lexer {
-    pub fn get_tokens(text: &'source str) -> Vec<SyntaxToken<'source>> {
-        let mut tokens = vec![];
+    pub fn get_tokens(text: &'source str) -> VecDeque<SyntaxToken<'source>> {
+        let mut tokens = VecDeque::new();
         let mut iterator = text.char_indices().peekable();
 
         while let Some(token) = Self::next_token(text, &mut iterator) {
             let kind = token.kind();
-            tokens.push(token);
-            if kind == SyntaxKind::EndOfFile {
+            tokens.push_back(token);
+            if kind == SyntaxKind::EndOfFileToken {
                 break;
             }
         }
@@ -31,34 +31,34 @@ impl<'source> Lexer {
             Some((_, c)) if c.is_whitespace() => Self::read_whitespace_token(text, iterator),
             Some(&(pos, '+')) => {
                 iterator.next();
-                Self::fixed_token(pos, SyntaxKind::Plus, "+")
+                Self::fixed_token(pos, SyntaxKind::PlusToken, "+")
             }
             Some(&(pos, '-')) => {
                 iterator.next();
-                Self::fixed_token(pos, SyntaxKind::Minus, "-")
+                Self::fixed_token(pos, SyntaxKind::MinusToken, "-")
             }
             Some(&(pos, '*')) => {
                 iterator.next();
-                Self::fixed_token(pos, SyntaxKind::Star, "*")
+                Self::fixed_token(pos, SyntaxKind::StarToken, "*")
             }
             Some(&(pos, '/')) => {
                 iterator.next();
-                Self::fixed_token(pos, SyntaxKind::Slash, "/")
+                Self::fixed_token(pos, SyntaxKind::SlashToken, "/")
             }
             Some(&(pos, '(')) => {
                 iterator.next();
-                Self::fixed_token(pos, SyntaxKind::OpenParenthesis, "(")
+                Self::fixed_token(pos, SyntaxKind::OpenParenthesisToken, "(")
             }
             Some(&(pos, ')')) => {
                 iterator.next();
-                Self::fixed_token(pos, SyntaxKind::CloseParenthesis, ")")
+                Self::fixed_token(pos, SyntaxKind::CloseParenthesisToken, ")")
             }
             Some(&(pos, _)) => {
                 iterator.next();
-                Self::fixed_token(pos, SyntaxKind::Bad, "")
+                Self::fixed_token(pos, SyntaxKind::BadToken, "")
             }
             None => Some(SyntaxToken::new(
-                SyntaxKind::EndOfFile,
+                SyntaxKind::EndOfFileToken,
                 text.len(),
                 "",
                 None,
@@ -96,7 +96,12 @@ impl<'source> Lexer {
             Err(_) => return None,
         };
         let value = Some(SilverValue::Integer(parsed));
-        Some(SyntaxToken::new(SyntaxKind::Number, start, text, value))
+        Some(SyntaxToken::new(
+            SyntaxKind::NumberToken,
+            start,
+            text,
+            value,
+        ))
     }
 
     fn read_whitespace_token(
@@ -115,6 +120,11 @@ impl<'source> Lexer {
             .cloned()
             .unwrap_or_else(|| (text.len(), '\0'));
         let text = &text[start..position];
-        Some(SyntaxToken::new(SyntaxKind::Whitespace, start, text, None))
+        Some(SyntaxToken::new(
+            SyntaxKind::WhitespaceToken,
+            start,
+            text,
+            None,
+        ))
     }
 }

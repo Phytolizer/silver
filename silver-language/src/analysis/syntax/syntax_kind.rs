@@ -1,15 +1,34 @@
+use std::fmt::Display;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum SyntaxKind {
-    Bad,
-    EndOfFile,
+    // Special tokens
+    BadToken,
+    EndOfFileToken,
 
-    Number,
-    Whitespace,
+    // Dynamic tokens
+    NumberToken,
+    WhitespaceToken,
 
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    OpenParenthesis,
-    CloseParenthesis,
+    // Fixed tokens
+    PlusToken,
+    MinusToken,
+    StarToken,
+    SlashToken,
+    OpenParenthesisToken,
+    CloseParenthesisToken,
+
+    // Nodes
+    Root,
+
+    // Expressions
+    LiteralExpression,
+    UnaryExpression,
+    BinaryExpression,
+}
+
+impl Display for SyntaxKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }

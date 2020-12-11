@@ -2,14 +2,28 @@ use std::fmt::Display;
 
 use crate::analysis::silver_value::SilverValue;
 
-use super::syntax_kind::SyntaxKind;
+use super::{syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SyntaxToken<'source> {
     kind: SyntaxKind,
     position: usize,
     text: &'source str,
     value: Option<SilverValue>,
+}
+
+impl<'source> SyntaxNodeExt for SyntaxToken<'source> {
+    fn children(&self) -> Vec<&dyn SyntaxNodeExt> {
+        vec![]
+    }
+
+    fn kind(&self) -> SyntaxKind {
+        self.kind
+    }
+
+    fn value(&self) -> Option<&SilverValue> {
+        self.value()
+    }
 }
 
 impl<'source> SyntaxToken<'source> {
