@@ -81,6 +81,7 @@ fn main() -> anyhow::Result<()> {
         if error_reporter.had_error() {
             for error in error_reporter.errors() {
                 stdout.execute(SetForegroundColor(Color::Red))?;
+                writeln!(stdout)?;
                 writeln!(stdout, "ERROR: {}", error.message())?;
 
                 let prefix = &line[..error.span().start];
@@ -93,6 +94,7 @@ fn main() -> anyhow::Result<()> {
                 write!(stdout, "{}", highlight)?;
                 stdout.execute(ResetColor)?;
                 write!(stdout, "{}", suffix)?;
+                writeln!(stdout)?;
             }
         } else {
             writeln!(stdout, "{}", value.unwrap())?;
