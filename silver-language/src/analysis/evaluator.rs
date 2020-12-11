@@ -1,86 +1,80 @@
 use super::{
-    silver_value::SilverValue,
-    syntax::{
-        expression_syntax::ExpressionSyntax, syntax_kind::SyntaxKind, syntax_token::SyntaxToken,
-        syntax_tree::SyntaxTree,
+    binding::{
+        binder::Binder, bound_binary_operator::BoundBinaryOperator,
+        bound_binary_operator_kind::BoundBinaryOperatorKind, bound_expression::BoundExpression,
+        bound_unary_operator::BoundUnaryOperator,
+        bound_unary_operator_kind::BoundUnaryOperatorKind,
     },
+    errors::error_reporter::ErrorReporter,
+    silver_value::SilverValue,
+    syntax::syntax_tree::SyntaxTree,
 };
 
-pub struct Evaluator<'source> {
-    syntax_tree: SyntaxTree<'source>,
+pub struct Evaluator {
+    bound_tree: BoundExpression,
 }
 
-impl<'source> Evaluator<'source> {
-    pub fn new(syntax_tree: SyntaxTree<'source>) -> Self {
-        Self { syntax_tree }
+impl Evaluator {
+    pub fn new(syntax_tree: SyntaxTree, error_reporter: &mut dyn ErrorReporter) -> Self {
+        let mut binder = Binder::new(error_reporter);
+        let bound_tree = binder.bind(syntax_tree.root());
+        Self { bound_tree }
     }
 
     pub fn evaluate(&self) -> Option<SilverValue> {
-        self.evaluate_expression(self.syntax_tree.root())
+        self.evaluate_expression(&self.bound_tree)
     }
 
-    fn evaluate_expression(&self, root: &ExpressionSyntax) -> Option<SilverValue> {
+    fn evaluate_expression(&self, root: &BoundExpression) -> Option<SilverValue> {
         match root {
-            ExpressionSyntax::Literal { literal_token } => literal_token.value().cloned(),
-            ExpressionSyntax::Binary {
+            BoundExpression::Literal { value } => value.clone(),
+            BoundExpression::Unary { operator, operand } => {
+                self.evaluate_unary_expression(operator, operand)
+            }
+            BoundExpression::Binary {
                 left,
                 operator,
                 right,
             } => self.evaluate_binary_expression(left, operator, right),
-            ExpressionSyntax::Unary { operator, operand } => {
-                self.evaluate_unary_expression(operator, operand)
-            }
-            ExpressionSyntax::Parenthesized { expression, .. } => {
-                self.evaluate_parenthesized_expression(expression)
-            }
         }
-    }
-
-    fn evaluate_parenthesized_expression(
-        &self,
-        expression: &ExpressionSyntax,
-    ) -> Option<SilverValue> {
-        self.evaluate_expression(expression)
     }
 
     fn evaluate_binary_expression(
         &self,
-        left: &ExpressionSyntax,
-        operator: &SyntaxToken,
-        right: &ExpressionSyntax,
+        left: &BoundExpression,
+        operator: &BoundBinaryOperator,
+        right: &BoundExpression,
     ) -> Option<SilverValue> {
         let left = self.evaluate_expression(left);
         let right = self.evaluate_expression(right);
 
         match operator.kind() {
-            SyntaxKind::PlusToken => Some(SilverValue::Integer(
+            BoundBinaryOperatorKind::Addition => Some(SilverValue::Integer(
                 left.unwrap().as_integer().unwrap() + right.unwrap().as_integer().unwrap(),
             )),
-            SyntaxKind::MinusToken => Some(SilverValue::Integer(
+            BoundBinaryOperatorKind::Subtraction => Some(SilverValue::Integer(
                 left.unwrap().as_integer().unwrap() + right.unwrap().as_integer().unwrap(),
             )),
-            SyntaxKind::StarToken => Some(SilverValue::Integer(
+            BoundBinaryOperatorKind::Multiplication => Some(SilverValue::Integer(
                 left.unwrap().as_integer().unwrap() * right.unwrap().as_integer().unwrap(),
             )),
-            SyntaxKind::SlashToken => Some(SilverValue::Integer(
+            BoundBinaryOperatorKind::Division => Some(SilverValue::Integer(
                 left.unwrap().as_integer().unwrap() / right.unwrap().as_integer().unwrap(),
             )),
-            _ => panic!("unexpected binary operator {}", operator.kind()),
         }
     }
 
     fn evaluate_unary_expression(
         &self,
-        operator: &SyntaxToken,
-        operand: &ExpressionSyntax,
+        operator: &BoundUnaryOperator,
+        operand: &BoundExpression,
     ) -> Option<SilverValue> {
         let operand = self.evaluate_expression(operand);
         match operator.kind() {
-            SyntaxKind::PlusToken => operand,
-            SyntaxKind::MinusToken => Some(SilverValue::Integer(
+            BoundUnaryOperatorKind::Identity => operand,
+            BoundUnaryOperatorKind::Negation => Some(SilverValue::Integer(
                 -operand.unwrap().as_integer().unwrap(),
             )),
-            _ => panic!("unexpected unary operator {}", operator.kind()),
         }
     }
 }
