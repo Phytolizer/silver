@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::analysis::{
     errors::error_reporter::ErrorReporter,
-    silver_type::SilverType,
     silver_value::SilverValue,
     syntax::{expression_syntax::ExpressionSyntax, syntax_token::SyntaxToken},
 };
@@ -14,12 +13,12 @@ use super::{
 
 pub(crate) struct Binder<'reporter, 'variables> {
     error_reporter: &'reporter mut dyn ErrorReporter,
-    variables: &'variables mut HashMap<String, Option<SilverValue>>,
+    variables: &'variables mut HashMap<String, SilverValue>,
 }
 
 impl<'reporter, 'variables> Binder<'reporter, 'variables> {
     pub(crate) fn new(
-        variables: &'variables mut HashMap<String, Option<SilverValue>>,
+        variables: &'variables mut HashMap<String, SilverValue>,
         error_reporter: &'reporter mut dyn ErrorReporter,
     ) -> Self {
         Self {
@@ -142,7 +141,7 @@ impl<'reporter, 'variables> Binder<'reporter, 'variables> {
     fn bind_name_expression(&mut self, identifier_token: &SyntaxToken) -> BoundExpression {
         let name = identifier_token.text();
         if let Some(value) = self.variables.get(name).as_ref() {
-            let ty = value.as_ref().map(|v| v.ty()).unwrap_or(SilverType::Null);
+            let ty = value.ty();
             BoundExpression::Variable {
                 name: name.to_string(),
                 ty,

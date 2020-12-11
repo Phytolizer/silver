@@ -24,7 +24,7 @@ fn main() -> anyhow::Result<()> {
     let mut line = String::new();
     let mut view_options = ViewOptions::default();
     let mut error_reporter = StringErrorReporter::new();
-    let mut variables = HashMap::<String, Option<SilverValue>>::new();
+    let mut variables = HashMap::<String, SilverValue>::new();
 
     loop {
         error_reporter.clear();

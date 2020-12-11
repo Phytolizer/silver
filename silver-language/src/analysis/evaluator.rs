@@ -11,11 +11,11 @@ use super::{
 };
 
 pub struct Evaluator<'variables> {
-    variables: &'variables mut HashMap<String, Option<SilverValue>>,
+    variables: &'variables mut HashMap<String, SilverValue>,
 }
 
 impl<'variables> Evaluator<'variables> {
-    pub(crate) fn new(variables: &'variables mut HashMap<String, Option<SilverValue>>) -> Self {
+    pub(crate) fn new(variables: &'variables mut HashMap<String, SilverValue>) -> Self {
         Self { variables }
     }
 
@@ -42,7 +42,7 @@ impl<'variables> Evaluator<'variables> {
     }
 
     fn evaluate_variable_expression(&self, name: &str) -> SilverValue {
-        self.variables[name].clone().unwrap()
+        self.variables[name].clone()
     }
 
     fn evaluate_assignment_expression(
@@ -51,7 +51,7 @@ impl<'variables> Evaluator<'variables> {
         expression: &BoundExpression,
     ) -> SilverValue {
         let value = self.evaluate_expression(expression);
-        self.variables.insert(name.to_string(), Some(value.clone()));
+        self.variables.insert(name.to_string(), value.clone());
         value
     }
 

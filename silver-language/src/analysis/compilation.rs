@@ -23,7 +23,7 @@ impl<'source, 'reporter> Compilation<'source, 'reporter> {
 
     pub fn evaluate(
         &mut self,
-        variables: &mut HashMap<String, Option<SilverValue>>,
+        variables: &mut HashMap<String, SilverValue>,
     ) -> Option<SilverValue> {
         let mut binder = Binder::new(variables, self.error_reporter);
         let bound_tree = binder.bind(self.syntax.root());
