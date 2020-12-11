@@ -67,7 +67,12 @@ impl<'source> Lexer {
             }
             Some(&(pos, '!')) => {
                 iterator.next();
-                return Self::fixed_token(pos, SyntaxKind::BangToken, "!");
+                if iterator.peek().map(|&(_, c)| c == '=').unwrap_or(false) {
+                    iterator.next();
+                    return Self::fixed_token(pos, SyntaxKind::BangEqualsToken, "!=");
+                } else {
+                    return Self::fixed_token(pos, SyntaxKind::BangToken, "!");
+                }
             }
             Some(&(pos, '&')) => {
                 iterator.next();
@@ -81,6 +86,13 @@ impl<'source> Lexer {
                 if iterator.peek().map(|&(_, c)| c == '|').unwrap_or(false) {
                     iterator.next();
                     return Self::fixed_token(pos, SyntaxKind::PipePipeToken, "||");
+                }
+            }
+            Some(&(pos, '=')) => {
+                iterator.next();
+                if iterator.peek().map(|&(_, c)| c == '=').unwrap_or(false) {
+                    iterator.next();
+                    return Self::fixed_token(pos, SyntaxKind::EqualsEqualsToken, "==");
                 }
             }
             None => {

@@ -67,6 +67,8 @@ impl Evaluator {
             BoundBinaryOperatorKind::LogicalOr => Some(SilverValue::Boolean(
                 left.unwrap().as_boolean().unwrap() || right.unwrap().as_boolean().unwrap(),
             )),
+            BoundBinaryOperatorKind::Equality => Some(SilverValue::Boolean(left == right)),
+            BoundBinaryOperatorKind::Inequality => Some(SilverValue::Boolean(left != right)),
         }
     }
 

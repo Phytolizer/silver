@@ -68,6 +68,34 @@ impl BoundBinaryOperator {
                 SilverType::Boolean,
                 SilverType::Boolean,
             ),
+            BoundBinaryOperator::new(
+                SyntaxKind::EqualsEqualsToken,
+                BoundBinaryOperatorKind::Equality,
+                SilverType::Integer,
+                SilverType::Integer,
+                SilverType::Boolean,
+            ),
+            BoundBinaryOperator::new(
+                SyntaxKind::EqualsEqualsToken,
+                BoundBinaryOperatorKind::Equality,
+                SilverType::Boolean,
+                SilverType::Boolean,
+                SilverType::Boolean,
+            ),
+            BoundBinaryOperator::new(
+                SyntaxKind::BangEqualsToken,
+                BoundBinaryOperatorKind::Inequality,
+                SilverType::Integer,
+                SilverType::Integer,
+                SilverType::Boolean,
+            ),
+            BoundBinaryOperator::new(
+                SyntaxKind::BangEqualsToken,
+                BoundBinaryOperatorKind::Inequality,
+                SilverType::Boolean,
+                SilverType::Boolean,
+                SilverType::Boolean,
+            ),
         ]
     }
 

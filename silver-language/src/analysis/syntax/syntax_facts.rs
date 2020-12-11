@@ -8,7 +8,7 @@ pub(crate) trait Operator {
 impl Operator for SyntaxKind {
     fn unary_operator_precedence(&self) -> usize {
         match self {
-            SyntaxKind::PlusToken | SyntaxKind::MinusToken | SyntaxKind::BangToken => 5,
+            SyntaxKind::PlusToken | SyntaxKind::MinusToken | SyntaxKind::BangToken => 6,
             _ => 0,
         }
     }
@@ -16,9 +16,11 @@ impl Operator for SyntaxKind {
     fn binary_operator_precedence(&self) -> usize {
         match self {
             // */
-            SyntaxKind::StarToken | SyntaxKind::SlashToken => 4,
+            SyntaxKind::StarToken | SyntaxKind::SlashToken => 5,
             // +-
-            SyntaxKind::PlusToken | SyntaxKind::MinusToken => 3,
+            SyntaxKind::PlusToken | SyntaxKind::MinusToken => 4,
+
+            SyntaxKind::EqualsEqualsToken | SyntaxKind::BangEqualsToken => 3,
 
             // &&
             SyntaxKind::AmpersandAmpersandToken => 2,

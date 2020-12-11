@@ -21,6 +21,8 @@ pub enum SyntaxKind {
     BangToken,
     AmpersandAmpersandToken,
     PipePipeToken,
+    EqualsEqualsToken,
+    BangEqualsToken,
 
     // Keywords
     TrueKeyword,
