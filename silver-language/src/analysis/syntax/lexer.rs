@@ -60,6 +60,7 @@ impl<'source> Lexer {
                 Self::fixed_token(pos, SyntaxKind::CloseParenthesisToken, ")")
             }
             Some(&(pos, c)) => {
+                iterator.next();
                 error_reporter.report_error(format!("Bad character in input: '{}'", c));
                 Self::fixed_token(pos, SyntaxKind::BadToken, "")
             }
