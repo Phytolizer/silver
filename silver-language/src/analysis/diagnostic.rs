@@ -23,4 +23,8 @@ impl Diagnostic {
     pub fn message(&self) -> &str {
         self.message.as_str()
     }
+
+    pub fn kind(&self) -> &DiagnosticKind {
+        &self.kind
+    }
 }
