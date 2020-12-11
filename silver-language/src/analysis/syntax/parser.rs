@@ -43,7 +43,18 @@ impl<'source, 'reporter> Parser<'source, 'reporter> {
     }
 
     fn parse_binary_expression(&mut self, parent_precedence: usize) -> ExpressionSyntax<'source> {
-        let mut left = self.parse_primary_expression();
+        let unary_operator_precedence = self.current().kind().unary_operator_precedence();
+        let mut left =
+            if unary_operator_precedence != 0 && unary_operator_precedence >= parent_precedence {
+                let operator = self.next_token();
+                let operand = self.parse_binary_expression(unary_operator_precedence);
+                ExpressionSyntax::Unary {
+                    operator,
+                    operand: Box::new(operand),
+                }
+            } else {
+                self.parse_primary_expression()
+            };
 
         loop {
             let precedence = self.current().kind().binary_operator_precedence();
