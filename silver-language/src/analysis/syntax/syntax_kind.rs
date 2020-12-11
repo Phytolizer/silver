@@ -25,6 +25,7 @@ pub enum SyntaxKind {
     LiteralExpression,
     UnaryExpression,
     BinaryExpression,
+    ParenthesizedExpression,
 }
 
 impl Display for SyntaxKind {

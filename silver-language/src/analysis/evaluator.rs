@@ -30,7 +30,17 @@ impl<'source> Evaluator<'source> {
             ExpressionSyntax::Unary { operator, operand } => {
                 self.evaluate_unary_expression(operator, operand)
             }
+            ExpressionSyntax::Parenthesized { expression, .. } => {
+                self.evaluate_parenthesized_expression(expression)
+            }
         }
+    }
+
+    fn evaluate_parenthesized_expression(
+        &self,
+        expression: &ExpressionSyntax,
+    ) -> Option<SilverValue> {
+        self.evaluate_expression(expression)
     }
 
     fn evaluate_binary_expression(
