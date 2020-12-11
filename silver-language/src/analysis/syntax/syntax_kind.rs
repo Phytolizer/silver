@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, strum_macros::EnumIter)]
 pub enum SyntaxKind {
     // Special tokens
     BadToken,
