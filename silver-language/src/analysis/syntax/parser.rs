@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::analysis::errors::error_reporter::ErrorReporter;
+use crate::analysis::{errors::error_reporter::ErrorReporter, silver_value::SilverValue};
 
 use super::{
     expression_syntax::ExpressionSyntax, lexer::Lexer, syntax_facts::Operator,
@@ -75,31 +75,37 @@ impl<'source, 'reporter> Parser<'source, 'reporter> {
     }
 
     fn parse_primary_expression(&mut self) -> ExpressionSyntax<'source> {
-        if self.check_token(&[SyntaxKind::OpenParenthesisToken]) {
-            let open_parenthesis_token = self.next_token();
-            let expression = self.parse_expression();
-            let close_parenthesis_token = self.match_token(SyntaxKind::CloseParenthesisToken);
-            return ExpressionSyntax::Parenthesized {
-                open_parenthesis_token,
-                expression: Box::new(expression),
-                close_parenthesis_token,
-            };
+        match self.current().kind() {
+            SyntaxKind::OpenParenthesisToken => {
+                let open_parenthesis_token = self.next_token();
+                let expression = self.parse_expression();
+                let close_parenthesis_token = self.match_token(SyntaxKind::CloseParenthesisToken);
+                ExpressionSyntax::Parenthesized {
+                    open_parenthesis_token,
+                    expression: Box::new(expression),
+                    close_parenthesis_token,
+                }
+            }
+            SyntaxKind::TrueKeyword | SyntaxKind::FalseKeyword => {
+                let keyword_token = self.next_token();
+                let value = keyword_token.kind() == SyntaxKind::TrueKeyword;
+                ExpressionSyntax::Literal {
+                    literal_token: keyword_token,
+                    value: Some(SilverValue::Boolean(value)),
+                }
+            }
+            _ => {
+                let literal_token = self.match_token(SyntaxKind::NumberToken);
+                ExpressionSyntax::Literal {
+                    literal_token,
+                    value: None,
+                }
+            }
         }
-        let literal_token = self.match_token(SyntaxKind::NumberToken);
-        ExpressionSyntax::Literal { literal_token }
     }
 
     fn current(&self) -> &SyntaxToken {
         &self.tokens[0]
-    }
-
-    fn check_token(&self, kinds: &[SyntaxKind]) -> bool {
-        for &kind in kinds {
-            if self.tokens[0].kind() == kind {
-                return true;
-            }
-        }
-        false
     }
 
     fn next_token(&mut self) -> SyntaxToken<'source> {

@@ -9,6 +9,7 @@ pub enum SyntaxKind {
     // Dynamic tokens
     NumberToken,
     WhitespaceToken,
+    IdentifierToken,
 
     // Fixed tokens
     PlusToken,
@@ -17,6 +18,15 @@ pub enum SyntaxKind {
     SlashToken,
     OpenParenthesisToken,
     CloseParenthesisToken,
+    BangToken,
+    AmpersandAmpersandToken,
+    PipePipeToken,
+    EqualsEqualsToken,
+    BangEqualsToken,
+
+    // Keywords
+    TrueKeyword,
+    FalseKeyword,
 
     // Nodes
     Root,

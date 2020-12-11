@@ -1,8 +1,11 @@
+use crate::analysis::silver_value::SilverValue;
+
 use super::{syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt, syntax_token::SyntaxToken};
 
 pub enum ExpressionSyntax<'source> {
     Literal {
         literal_token: SyntaxToken<'source>,
+        value: Option<SilverValue>,
     },
     Binary {
         left: Box<ExpressionSyntax<'source>>,
@@ -31,7 +34,7 @@ impl<'source> SyntaxNodeExt for ExpressionSyntax<'source> {
     }
     fn children(&self) -> Vec<&dyn SyntaxNodeExt> {
         match self {
-            ExpressionSyntax::Literal { literal_token } => vec![literal_token],
+            ExpressionSyntax::Literal { literal_token, .. } => vec![literal_token],
             ExpressionSyntax::Binary {
                 left,
                 operator,

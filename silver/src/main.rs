@@ -76,6 +76,7 @@ fn main() -> anyhow::Result<()> {
         if view_options.show_tree {
             parse_tree.pretty_print(&mut stdout)?;
         }
+        let evaluator = Evaluator::new(parse_tree, &mut error_reporter);
         if error_reporter.had_error() {
             stdout.execute(SetForegroundColor(Color::Red))?;
             for error in error_reporter.errors() {
@@ -83,7 +84,6 @@ fn main() -> anyhow::Result<()> {
             }
             stdout.execute(ResetColor)?;
         } else {
-            let evaluator = Evaluator::new(parse_tree);
             writeln!(stdout, "{}", evaluator.evaluate().unwrap())?;
         }
     }
