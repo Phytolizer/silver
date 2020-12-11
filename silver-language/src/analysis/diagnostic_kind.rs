@@ -18,4 +18,7 @@ pub enum DiagnosticKind {
         operator_kind: SyntaxKind,
         operand_type: SilverType,
     },
+    UndefinedName {
+        name: String,
+    },
 }

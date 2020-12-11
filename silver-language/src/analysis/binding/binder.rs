@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use crate::analysis::{
     errors::error_reporter::ErrorReporter,
+    silver_type::SilverType,
     silver_value::SilverValue,
     syntax::{expression_syntax::ExpressionSyntax, syntax_token::SyntaxToken},
 };
@@ -9,13 +12,20 @@ use super::{
     bound_unary_operator::BoundUnaryOperator,
 };
 
-pub(crate) struct Binder<'reporter> {
+pub(crate) struct Binder<'reporter, 'variables> {
     error_reporter: &'reporter mut dyn ErrorReporter,
+    variables: &'variables mut HashMap<String, Option<SilverValue>>,
 }
 
-impl<'reporter> Binder<'reporter> {
-    pub(crate) fn new(error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
-        Self { error_reporter }
+impl<'reporter, 'variables> Binder<'reporter, 'variables> {
+    pub(crate) fn new(
+        variables: &'variables mut HashMap<String, Option<SilverValue>>,
+        error_reporter: &'reporter mut dyn ErrorReporter,
+    ) -> Self {
+        Self {
+            error_reporter,
+            variables,
+        }
     }
 
     pub(crate) fn bind(&mut self, syntax: &ExpressionSyntax) -> BoundExpression {
@@ -45,6 +55,14 @@ impl<'reporter> Binder<'reporter> {
                 expression,
                 close_parenthesis_token,
             ),
+            ExpressionSyntax::Name { identifier_token } => {
+                self.bind_name_expression(identifier_token)
+            }
+            ExpressionSyntax::Assignment {
+                identifier_token,
+                expression,
+                ..
+            } => self.bind_assignment_expression(identifier_token, expression),
         }
     }
 
@@ -119,5 +137,35 @@ impl<'reporter> Binder<'reporter> {
         close_parenthesis_token: &SyntaxToken,
     ) -> BoundExpression {
         self.bind_expression(expression)
+    }
+
+    fn bind_name_expression(&mut self, identifier_token: &SyntaxToken) -> BoundExpression {
+        let name = identifier_token.text();
+        if let Some(value) = self.variables.get(name).as_ref() {
+            let ty = value.as_ref().map(|v| v.ty()).unwrap_or(SilverType::Null);
+            BoundExpression::Variable {
+                name: name.to_string(),
+                ty,
+            }
+        } else {
+            self.error_reporter
+                .report_undefined_name(identifier_token.span(), name);
+            BoundExpression::Literal {
+                value: Some(SilverValue::Integer(0)),
+            }
+        }
+    }
+
+    fn bind_assignment_expression(
+        &mut self,
+        identifier_token: &SyntaxToken,
+        expression: &ExpressionSyntax,
+    ) -> BoundExpression {
+        let name = identifier_token.text();
+        let bound_expression = self.bind_expression(expression);
+        BoundExpression::Assignment {
+            name: name.to_string(),
+            expression: Box::new(bound_expression),
+        }
     }
 }

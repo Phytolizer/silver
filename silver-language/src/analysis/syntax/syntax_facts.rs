@@ -50,6 +50,7 @@ impl SyntaxKindWithText for SyntaxKind {
             SyntaxKind::PipePipeToken => Some("||"),
             SyntaxKind::EqualsEqualsToken => Some("=="),
             SyntaxKind::BangEqualsToken => Some("!="),
+            SyntaxKind::EqualsToken => Some("="),
             SyntaxKind::TrueKeyword => Some("true"),
             SyntaxKind::FalseKeyword => Some("false"),
             _ => None,

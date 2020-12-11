@@ -84,6 +84,16 @@ pub trait ErrorReporter {
             },
         ));
     }
+    fn report_undefined_name(&mut self, span: TextSpan, name: &str) {
+        let message = format!("The variable '{}' has not been declared.", name);
+        self.report_error(Diagnostic::new(
+            span,
+            message,
+            DiagnosticKind::UndefinedName {
+                name: name.to_string(),
+            },
+        ));
+    }
     fn had_error(&self) -> bool;
     fn errors(&self) -> &[Diagnostic];
     fn clear(&mut self);

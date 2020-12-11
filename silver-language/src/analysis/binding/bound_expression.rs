@@ -19,6 +19,14 @@ pub(crate) enum BoundExpression {
         operator: BoundBinaryOperator,
         right: Box<BoundExpression>,
     },
+    Variable {
+        name: String,
+        ty: SilverType,
+    },
+    Assignment {
+        name: String,
+        expression: Box<BoundExpression>,
+    },
 }
 
 impl BoundExpression {
@@ -29,6 +37,8 @@ impl BoundExpression {
             }
             BoundExpression::Unary { operator, .. } => operator.result_type(),
             BoundExpression::Binary { operator, .. } => operator.result_type(),
+            BoundExpression::Variable { ty, .. } => *ty,
+            BoundExpression::Assignment { expression, .. } => expression.ty(),
         }
     }
 }
@@ -39,6 +49,8 @@ impl BoundNode for BoundExpression {
             BoundExpression::Literal { .. } => BoundNodeKind::LiteralExpression,
             BoundExpression::Unary { .. } => BoundNodeKind::UnaryExpression,
             BoundExpression::Binary { .. } => BoundNodeKind::BinaryExpression,
+            BoundExpression::Variable { .. } => BoundNodeKind::VariableExpression,
+            BoundExpression::Assignment { .. } => BoundNodeKind::AssignmentExpression,
         }
     }
 
@@ -51,6 +63,8 @@ impl BoundNode for BoundExpression {
                 operator,
                 right,
             } => vec![left.as_ref(), operator, right.as_ref()],
+            BoundExpression::Variable { .. } => vec![],
+            BoundExpression::Assignment { expression, .. } => vec![expression.as_ref()],
         }
     }
 }

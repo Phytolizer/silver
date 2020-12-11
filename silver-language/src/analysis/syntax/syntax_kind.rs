@@ -23,6 +23,7 @@ pub enum SyntaxKind {
     PipePipeToken,
     EqualsEqualsToken,
     BangEqualsToken,
+    EqualsToken,
 
     // Keywords
     TrueKeyword,
@@ -36,6 +37,8 @@ pub enum SyntaxKind {
     UnaryExpression,
     BinaryExpression,
     ParenthesizedExpression,
+    NameExpression,
+    AssignmentExpression,
 }
 
 impl Display for SyntaxKind {

@@ -22,6 +22,14 @@ pub enum ExpressionSyntax<'source> {
         expression: Box<ExpressionSyntax<'source>>,
         close_parenthesis_token: SyntaxToken<'source>,
     },
+    Name {
+        identifier_token: SyntaxToken<'source>,
+    },
+    Assignment {
+        identifier_token: SyntaxToken<'source>,
+        equals_token: SyntaxToken<'source>,
+        expression: Box<ExpressionSyntax<'source>>,
+    },
 }
 
 impl<'source> SyntaxNodeExt for ExpressionSyntax<'source> {
@@ -31,6 +39,8 @@ impl<'source> SyntaxNodeExt for ExpressionSyntax<'source> {
             ExpressionSyntax::Binary { .. } => SyntaxKind::BinaryExpression,
             ExpressionSyntax::Unary { .. } => SyntaxKind::UnaryExpression,
             ExpressionSyntax::Parenthesized { .. } => SyntaxKind::ParenthesizedExpression,
+            ExpressionSyntax::Name { .. } => SyntaxKind::NameExpression,
+            ExpressionSyntax::Assignment { .. } => SyntaxKind::AssignmentExpression,
         }
     }
     fn children(&self) -> Vec<&dyn SyntaxNodeExt> {
@@ -51,6 +61,12 @@ impl<'source> SyntaxNodeExt for ExpressionSyntax<'source> {
                 expression.as_ref(),
                 close_parenthesis_token,
             ],
+            ExpressionSyntax::Name { identifier_token } => vec![identifier_token],
+            ExpressionSyntax::Assignment {
+                identifier_token,
+                equals_token,
+                expression,
+            } => vec![identifier_token, equals_token, expression.as_ref()],
         }
     }
 

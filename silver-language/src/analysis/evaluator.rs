@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::{
     binding::{
         bound_binary_operator::BoundBinaryOperator,
@@ -8,20 +10,20 @@ use super::{
     silver_value::SilverValue,
 };
 
-pub struct Evaluator {
-    bound_tree: BoundExpression,
+pub struct Evaluator<'variables> {
+    variables: &'variables mut HashMap<String, Option<SilverValue>>,
 }
 
-impl Evaluator {
-    pub(crate) fn new(bound_tree: BoundExpression) -> Self {
-        Self { bound_tree }
+impl<'variables> Evaluator<'variables> {
+    pub(crate) fn new(variables: &'variables mut HashMap<String, Option<SilverValue>>) -> Self {
+        Self { variables }
     }
 
-    pub fn evaluate(&self) -> SilverValue {
-        self.evaluate_expression(&self.bound_tree)
+    pub(crate) fn evaluate(&mut self, bound_tree: &BoundExpression) -> SilverValue {
+        self.evaluate_expression(bound_tree)
     }
 
-    fn evaluate_expression(&self, root: &BoundExpression) -> SilverValue {
+    fn evaluate_expression<'a>(&'a mut self, root: &'a BoundExpression) -> SilverValue {
         match root {
             BoundExpression::Literal { value } => value.clone().unwrap(),
             BoundExpression::Unary { operator, operand } => {
@@ -32,11 +34,29 @@ impl Evaluator {
                 operator,
                 right,
             } => self.evaluate_binary_expression(left, operator, right),
+            BoundExpression::Variable { name, .. } => self.evaluate_variable_expression(name),
+            BoundExpression::Assignment { name, expression } => {
+                self.evaluate_assignment_expression(name, expression)
+            }
         }
     }
 
+    fn evaluate_variable_expression(&self, name: &str) -> SilverValue {
+        self.variables[name].clone().unwrap()
+    }
+
+    fn evaluate_assignment_expression(
+        &mut self,
+        name: &str,
+        expression: &BoundExpression,
+    ) -> SilverValue {
+        let value = self.evaluate_expression(expression);
+        self.variables.insert(name.to_string(), Some(value.clone()));
+        value
+    }
+
     fn evaluate_binary_expression(
-        &self,
+        &mut self,
         left: &BoundExpression,
         operator: &BoundBinaryOperator,
         right: &BoundExpression,
@@ -69,7 +89,7 @@ impl Evaluator {
     }
 
     fn evaluate_unary_expression(
-        &self,
+        &mut self,
         operator: &BoundUnaryOperator,
         operand: &BoundExpression,
     ) -> SilverValue {

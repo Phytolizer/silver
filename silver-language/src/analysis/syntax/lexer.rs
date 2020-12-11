@@ -94,6 +94,8 @@ impl<'source> Lexer {
                 if iterator.peek().map(|&(_, c)| c == '=').unwrap_or(false) {
                     iterator.next();
                     return Self::fixed_token(pos, SyntaxKind::EqualsEqualsToken, "==");
+                } else {
+                    return Self::fixed_token(pos, SyntaxKind::EqualsToken, "=");
                 }
             }
             None => {
@@ -290,6 +292,9 @@ mod tests {
             || t1kind == SyntaxKind::IdentifierToken && t2_is_keyword
             || t1kind == SyntaxKind::IdentifierToken && t2kind == SyntaxKind::IdentifierToken
             || t1kind == SyntaxKind::BangToken && t2kind == SyntaxKind::EqualsEqualsToken
+            || t1kind == SyntaxKind::BangToken && t2kind == SyntaxKind::EqualsToken
+            || t1kind == SyntaxKind::EqualsToken && t2kind == SyntaxKind::EqualsEqualsToken
+            || t1kind == SyntaxKind::EqualsToken && t2kind == SyntaxKind::EqualsToken
             || t1kind == SyntaxKind::NumberToken && t2kind == SyntaxKind::NumberToken
     }
 

@@ -1,4 +1,7 @@
-use std::io::{self, BufRead, BufReader, Write};
+use std::{
+    collections::HashMap,
+    io::{self, BufRead, BufReader, Write},
+};
 
 use crossterm::{
     style::{Attribute, Color, ResetColor, SetAttribute, SetForegroundColor},
@@ -8,6 +11,7 @@ use crossterm::{
 use silver_language::analysis::{
     compilation::Compilation,
     errors::{error_reporter::ErrorReporter, string_error_reporter::StringErrorReporter},
+    silver_value::SilverValue,
     syntax::syntax_tree::SyntaxTree,
 };
 use view_options::ViewOptions;
@@ -20,6 +24,7 @@ fn main() -> anyhow::Result<()> {
     let mut line = String::new();
     let mut view_options = ViewOptions::default();
     let mut error_reporter = StringErrorReporter::new();
+    let mut variables = HashMap::<String, Option<SilverValue>>::new();
 
     loop {
         error_reporter.clear();
@@ -77,7 +82,7 @@ fn main() -> anyhow::Result<()> {
             parse_tree.pretty_print(&mut stdout)?;
         }
         let mut compilation = Compilation::new(parse_tree, &mut error_reporter);
-        let value = compilation.evaluate();
+        let value = compilation.evaluate(&mut variables);
         if error_reporter.had_error() {
             for error in error_reporter.errors() {
                 stdout.execute(SetForegroundColor(Color::Red))?;

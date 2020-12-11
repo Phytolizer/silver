@@ -39,7 +39,24 @@ impl<'source, 'reporter> Parser<'source, 'reporter> {
     }
 
     fn parse_expression(&mut self) -> ExpressionSyntax<'source> {
-        self.parse_binary_expression(0)
+        self.parse_assignment_expression()
+    }
+
+    fn parse_assignment_expression(&mut self) -> ExpressionSyntax<'source> {
+        if self.peek(0).unwrap().kind() == SyntaxKind::IdentifierToken
+            && self.peek(1).unwrap().kind() == SyntaxKind::EqualsToken
+        {
+            let identifier_token = self.next_token();
+            let equals_token = self.next_token();
+            let right = self.parse_assignment_expression();
+            ExpressionSyntax::Assignment {
+                identifier_token,
+                equals_token,
+                expression: Box::new(right),
+            }
+        } else {
+            self.parse_binary_expression(0)
+        }
     }
 
     fn parse_binary_expression(&mut self, parent_precedence: usize) -> ExpressionSyntax<'source> {
@@ -94,6 +111,10 @@ impl<'source, 'reporter> Parser<'source, 'reporter> {
                     value: Some(SilverValue::Boolean(value)),
                 }
             }
+            SyntaxKind::IdentifierToken => {
+                let identifier_token = self.next_token();
+                ExpressionSyntax::Name { identifier_token }
+            }
             _ => {
                 let literal_token = self.match_token(SyntaxKind::NumberToken);
                 ExpressionSyntax::Literal {
@@ -104,8 +125,12 @@ impl<'source, 'reporter> Parser<'source, 'reporter> {
         }
     }
 
+    fn peek(&self, offset: usize) -> Option<&SyntaxToken> {
+        self.tokens.get(offset)
+    }
+
     fn current(&self) -> &SyntaxToken {
-        &self.tokens[0]
+        self.peek(0).unwrap()
     }
 
     fn next_token(&mut self) -> SyntaxToken<'source> {
