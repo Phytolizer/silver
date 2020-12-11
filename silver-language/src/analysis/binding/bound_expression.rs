@@ -27,8 +27,8 @@ impl BoundExpression {
             BoundExpression::Literal { value } => {
                 value.as_ref().map(|v| v.ty()).unwrap_or(SilverType::Null)
             }
-            BoundExpression::Unary { operand, .. } => operand.ty(),
-            BoundExpression::Binary { left, .. } => left.ty(),
+            BoundExpression::Unary { operator, .. } => operator.result_type(),
+            BoundExpression::Binary { operator, .. } => operator.result_type(),
         }
     }
 }
