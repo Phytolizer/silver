@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::diagnostic_kind::DiagnosticKind;
 use super::text::text_span::TextSpan;
 
@@ -27,5 +29,11 @@ impl Diagnostic {
 
     pub fn kind(&self) -> &DiagnosticKind {
         &self.kind
+    }
+}
+
+impl Display for Diagnostic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
     }
 }
