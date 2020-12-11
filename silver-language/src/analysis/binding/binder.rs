@@ -1,6 +1,7 @@
 use crate::analysis::{
     errors::error_reporter::ErrorReporter,
     silver_type::SilverType,
+    silver_value::SilverValue,
     syntax::{
         expression_syntax::ExpressionSyntax, syntax_kind::SyntaxKind, syntax_token::SyntaxToken,
     },
@@ -27,9 +28,10 @@ impl<'reporter> Binder<'reporter> {
 
     fn bind_expression(&mut self, syntax: &ExpressionSyntax) -> BoundExpression {
         match syntax {
-            ExpressionSyntax::Literal { literal_token } => {
-                self.bind_literal_expression(literal_token)
-            }
+            ExpressionSyntax::Literal {
+                literal_token,
+                value,
+            } => self.bind_literal_expression(literal_token, value.clone()),
             ExpressionSyntax::Binary {
                 left,
                 operator,
@@ -50,10 +52,16 @@ impl<'reporter> Binder<'reporter> {
         }
     }
 
-    fn bind_literal_expression(&mut self, literal_token: &SyntaxToken) -> BoundExpression {
-        BoundExpression::Literal {
-            value: literal_token.value().cloned(),
-        }
+    fn bind_literal_expression(
+        &mut self,
+        literal_token: &SyntaxToken,
+        value: Option<SilverValue>,
+    ) -> BoundExpression {
+        value
+            .map(|v| BoundExpression::Literal { value: Some(v) })
+            .unwrap_or(BoundExpression::Literal {
+                value: literal_token.value().cloned(),
+            })
     }
 
     fn bind_binary_operator(

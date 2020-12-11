@@ -1,6 +1,6 @@
 use super::syntax_kind::SyntaxKind;
 
-pub trait Operator {
+pub(crate) trait Operator {
     fn unary_operator_precedence(&self) -> usize;
     fn binary_operator_precedence(&self) -> usize;
 }
@@ -19,5 +19,13 @@ impl Operator for SyntaxKind {
             SyntaxKind::PlusToken | SyntaxKind::MinusToken => 1,
             _ => 0,
         }
+    }
+}
+
+pub(crate) fn keyword_kind(text: &str) -> SyntaxKind {
+    match text {
+        "true" => SyntaxKind::TrueKeyword,
+        "false" => SyntaxKind::FalseKeyword,
+        _ => SyntaxKind::IdentifierToken,
     }
 }

@@ -2,7 +2,7 @@ use std::{collections::VecDeque, iter::Peekable};
 
 use crate::analysis::{errors::error_reporter::ErrorReporter, silver_value::SilverValue};
 
-use super::{syntax_kind::SyntaxKind, syntax_token::SyntaxToken};
+use super::{syntax_facts, syntax_kind::SyntaxKind, syntax_token::SyntaxToken};
 
 pub struct Lexer;
 
@@ -35,6 +35,9 @@ impl<'source> Lexer {
                 Self::read_number_token(text, iterator, error_reporter)
             }
             Some((_, c)) if c.is_whitespace() => Self::read_whitespace_token(text, iterator),
+            Some((_, c)) if c.is_alphabetic() => {
+                Self::read_identifier_or_keyword_token(text, iterator)
+            }
             Some(&(pos, '+')) => {
                 iterator.next();
                 Self::fixed_token(pos, SyntaxKind::PlusToken, "+")
@@ -137,5 +140,25 @@ impl<'source> Lexer {
             text,
             None,
         ))
+    }
+
+    fn read_identifier_or_keyword_token(
+        text: &'source str,
+        iterator: &mut Peekable<impl Iterator<Item = (usize, char)>>,
+    ) -> Option<SyntaxToken<'source>> {
+        let (start, _) = iterator.next().unwrap();
+        while let Some((_, c)) = iterator.peek() {
+            if !c.is_alphabetic() {
+                break;
+            }
+            iterator.next();
+        }
+        let (position, _) = iterator
+            .peek()
+            .cloned()
+            .unwrap_or_else(|| (text.len(), '\0'));
+        let text = &text[start..position];
+        let kind = syntax_facts::keyword_kind(text);
+        Some(SyntaxToken::new(kind, start, text, None))
     }
 }
