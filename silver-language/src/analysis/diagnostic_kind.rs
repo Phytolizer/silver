@@ -1,6 +1,7 @@
 use crate::analysis::silver_type::SilverType;
 use crate::analysis::syntax::syntax_kind::SyntaxKind;
 
+#[derive(Debug)]
 pub enum DiagnosticKind {
     BadCharacter,
     BadLiteral(SilverType),

@@ -1,6 +1,7 @@
 use super::diagnostic_kind::DiagnosticKind;
 use super::text::text_span::TextSpan;
 
+#[derive(Debug)]
 pub struct Diagnostic {
     span: TextSpan,
     message: String,

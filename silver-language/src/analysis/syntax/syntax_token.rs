@@ -4,7 +4,7 @@ use crate::analysis::{silver_value::SilverValue, text::text_span::TextSpan};
 
 use super::{syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SyntaxToken<'source> {
     kind: SyntaxKind,
     position: usize,

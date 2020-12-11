@@ -2,6 +2,7 @@ use crate::analysis::silver_value::SilverValue;
 
 use super::{syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt, syntax_token::SyntaxToken};
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum ExpressionSyntax<'source> {
     Literal {
         literal_token: SyntaxToken<'source>,
