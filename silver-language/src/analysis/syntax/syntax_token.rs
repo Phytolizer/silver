@@ -10,6 +10,7 @@ pub struct SyntaxToken<'source> {
     position: usize,
     text: &'source str,
     value: Option<SilverValue>,
+    span: TextSpan,
 }
 
 impl<'source> SyntaxNodeExt for SyntaxToken<'source> {
@@ -38,6 +39,7 @@ impl<'source> SyntaxToken<'source> {
             position,
             text,
             value,
+            span: position..position + text.len(),
         }
     }
 
@@ -58,7 +60,7 @@ impl<'source> SyntaxToken<'source> {
     }
 
     pub fn span(&self) -> TextSpan {
-        self.position..self.position + self.text.len()
+        self.span.clone()
     }
 }
 
