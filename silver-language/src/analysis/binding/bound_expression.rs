@@ -1,4 +1,6 @@
-use crate::analysis::{silver_type::SilverType, silver_value::SilverValue};
+use crate::analysis::{
+    silver_type::SilverType, silver_value::SilverValue, variable_symbol::VariableSymbol,
+};
 
 use super::{
     bound_binary_operator::BoundBinaryOperator, bound_node::BoundNode,
@@ -20,11 +22,10 @@ pub(crate) enum BoundExpression {
         right: Box<BoundExpression>,
     },
     Variable {
-        name: String,
-        ty: SilverType,
+        variable: VariableSymbol,
     },
     Assignment {
-        name: String,
+        variable: VariableSymbol,
         expression: Box<BoundExpression>,
     },
 }
@@ -37,7 +38,7 @@ impl BoundExpression {
             }
             BoundExpression::Unary { operator, .. } => operator.result_type(),
             BoundExpression::Binary { operator, .. } => operator.result_type(),
-            BoundExpression::Variable { ty, .. } => *ty,
+            BoundExpression::Variable { variable } => variable.ty(),
             BoundExpression::Assignment { expression, .. } => expression.ty(),
         }
     }

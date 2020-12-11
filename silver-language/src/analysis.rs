@@ -8,3 +8,4 @@ pub mod silver_type;
 pub mod silver_value;
 pub mod syntax;
 pub mod text;
+pub mod variable_symbol;

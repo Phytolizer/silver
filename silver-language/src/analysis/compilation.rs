@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::{
     binding::binder::Binder, errors::error_reporter::ErrorReporter, evaluator::Evaluator,
-    silver_value::SilverValue, syntax::syntax_tree::SyntaxTree,
+    silver_value::SilverValue, syntax::syntax_tree::SyntaxTree, variable_symbol::VariableSymbol,
 };
 
 pub struct Compilation<'source, 'reporter> {
@@ -23,7 +23,7 @@ impl<'source, 'reporter> Compilation<'source, 'reporter> {
 
     pub fn evaluate(
         &mut self,
-        variables: &mut HashMap<String, SilverValue>,
+        variables: &mut HashMap<VariableSymbol, SilverValue>,
     ) -> Option<SilverValue> {
         let mut binder = Binder::new(variables, self.error_reporter);
         let bound_tree = binder.bind(self.syntax.root());

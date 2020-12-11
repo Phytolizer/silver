@@ -13,6 +13,7 @@ use silver_language::analysis::{
     errors::{error_reporter::ErrorReporter, string_error_reporter::StringErrorReporter},
     silver_value::SilverValue,
     syntax::syntax_tree::SyntaxTree,
+    variable_symbol::VariableSymbol,
 };
 use view_options::ViewOptions;
 
@@ -24,7 +25,7 @@ fn main() -> anyhow::Result<()> {
     let mut line = String::new();
     let mut view_options = ViewOptions::default();
     let mut error_reporter = StringErrorReporter::new();
-    let mut variables = HashMap::<String, SilverValue>::new();
+    let mut variables = HashMap::<VariableSymbol, SilverValue>::new();
 
     loop {
         error_reporter.clear();

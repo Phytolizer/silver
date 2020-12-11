@@ -4,6 +4,7 @@ use crate::analysis::{
     errors::error_reporter::ErrorReporter,
     silver_value::SilverValue,
     syntax::{expression_syntax::ExpressionSyntax, syntax_token::SyntaxToken},
+    variable_symbol::VariableSymbol,
 };
 
 use super::{
@@ -13,12 +14,12 @@ use super::{
 
 pub(crate) struct Binder<'reporter, 'variables> {
     error_reporter: &'reporter mut dyn ErrorReporter,
-    variables: &'variables mut HashMap<String, SilverValue>,
+    variables: &'variables mut HashMap<VariableSymbol, SilverValue>,
 }
 
 impl<'reporter, 'variables> Binder<'reporter, 'variables> {
     pub(crate) fn new(
-        variables: &'variables mut HashMap<String, SilverValue>,
+        variables: &'variables mut HashMap<VariableSymbol, SilverValue>,
         error_reporter: &'reporter mut dyn ErrorReporter,
     ) -> Self {
         Self {
@@ -140,11 +141,10 @@ impl<'reporter, 'variables> Binder<'reporter, 'variables> {
 
     fn bind_name_expression(&mut self, identifier_token: &SyntaxToken) -> BoundExpression {
         let name = identifier_token.text();
-        if let Some(value) = self.variables.get(name).as_ref() {
-            let ty = value.ty();
+        let variable = self.variables.keys().find(|var| var.name() == name);
+        if let Some(variable) = variable {
             BoundExpression::Variable {
-                name: name.to_string(),
-                ty,
+                variable: variable.clone(),
             }
         } else {
             self.error_reporter
@@ -162,8 +162,14 @@ impl<'reporter, 'variables> Binder<'reporter, 'variables> {
     ) -> BoundExpression {
         let name = identifier_token.text();
         let bound_expression = self.bind_expression(expression);
+
+        let existing_variable = self.variables.keys().find(|v| v.name() == name);
+        if let Some(existing_variable) = existing_variable.cloned() {
+            self.variables.remove(&existing_variable);
+        }
+        let variable = VariableSymbol::new(name.to_string(), bound_expression.ty());
         BoundExpression::Assignment {
-            name: name.to_string(),
+            variable,
             expression: Box::new(bound_expression),
         }
     }

@@ -8,14 +8,15 @@ use super::{
         bound_unary_operator_kind::BoundUnaryOperatorKind,
     },
     silver_value::SilverValue,
+    variable_symbol::VariableSymbol,
 };
 
 pub struct Evaluator<'variables> {
-    variables: &'variables mut HashMap<String, SilverValue>,
+    variables: &'variables mut HashMap<VariableSymbol, SilverValue>,
 }
 
 impl<'variables> Evaluator<'variables> {
-    pub(crate) fn new(variables: &'variables mut HashMap<String, SilverValue>) -> Self {
+    pub(crate) fn new(variables: &'variables mut HashMap<VariableSymbol, SilverValue>) -> Self {
         Self { variables }
     }
 
@@ -34,24 +35,25 @@ impl<'variables> Evaluator<'variables> {
                 operator,
                 right,
             } => self.evaluate_binary_expression(left, operator, right),
-            BoundExpression::Variable { name, .. } => self.evaluate_variable_expression(name),
-            BoundExpression::Assignment { name, expression } => {
-                self.evaluate_assignment_expression(name, expression)
-            }
+            BoundExpression::Variable { variable } => self.evaluate_variable_expression(variable),
+            BoundExpression::Assignment {
+                variable,
+                expression,
+            } => self.evaluate_assignment_expression(variable, expression),
         }
     }
 
-    fn evaluate_variable_expression(&self, name: &str) -> SilverValue {
-        self.variables[name].clone()
+    fn evaluate_variable_expression(&self, variable: &VariableSymbol) -> SilverValue {
+        self.variables[variable].clone()
     }
 
     fn evaluate_assignment_expression(
         &mut self,
-        name: &str,
+        variable: &VariableSymbol,
         expression: &BoundExpression,
     ) -> SilverValue {
         let value = self.evaluate_expression(expression);
-        self.variables.insert(name.to_string(), value.clone());
+        self.variables.insert(variable.clone(), value.clone());
         value
     }
 
