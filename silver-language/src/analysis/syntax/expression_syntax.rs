@@ -1,4 +1,4 @@
-use crate::analysis::silver_value::SilverValue;
+use crate::analysis::{silver_value::SilverValue, text::text_span::TextSpan};
 
 use super::{syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt, syntax_token::SyntaxToken};
 
@@ -72,5 +72,26 @@ impl<'source> SyntaxNodeExt for ExpressionSyntax<'source> {
 
     fn value(&self) -> Option<&crate::analysis::silver_value::SilverValue> {
         None
+    }
+
+    fn span(&self) -> TextSpan {
+        match self {
+            ExpressionSyntax::Literal { literal_token, .. } => literal_token.span(),
+            ExpressionSyntax::Binary { left, right, .. } => left.span().start..right.span().end,
+            ExpressionSyntax::Unary { operator, operand } => {
+                operator.span().start..operand.span().end
+            }
+            ExpressionSyntax::Parenthesized {
+                open_parenthesis_token,
+                close_parenthesis_token,
+                ..
+            } => open_parenthesis_token.span().start..close_parenthesis_token.span().end,
+            ExpressionSyntax::Name { identifier_token } => identifier_token.span(),
+            ExpressionSyntax::Assignment {
+                identifier_token,
+                expression,
+                ..
+            } => identifier_token.span().start..expression.span().end,
+        }
     }
 }
