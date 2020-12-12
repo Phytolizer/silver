@@ -149,6 +149,12 @@ mod tests {
             ("false", SilverValue::Boolean(false)),
             ("!true", SilverValue::Boolean(false)),
             ("!false", SilverValue::Boolean(true)),
+            ("a = 10", SilverValue::Integer(10)),
+            ("a = true", SilverValue::Boolean(true)),
+            ("true && false", SilverValue::Boolean(false)),
+            ("true && true", SilverValue::Boolean(true)),
+            ("false || false", SilverValue::Boolean(false)),
+            ("false || true", SilverValue::Boolean(true)),
         ]
         .iter()
         {
