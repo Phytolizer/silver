@@ -44,6 +44,7 @@ impl<'source> SyntaxNodeExt for SyntaxNode<'source> {
     }
 }
 
+#[cfg(test)]
 pub fn flatten_tree(root: &dyn SyntaxNodeExt) -> Vec<&dyn SyntaxNodeExt> {
     let mut stack = vec![];
     let mut out = vec![];
