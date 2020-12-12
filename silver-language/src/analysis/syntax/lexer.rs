@@ -33,7 +33,7 @@ impl<'source> Lexer {
     ) -> Option<SyntaxToken<'source>> {
         let (start_pos, start_c) = iterator.peek().cloned().unwrap_or((0, '\0'));
         match iterator.peek() {
-            Some((_, c)) if c.is_numeric() => {
+            Some((_, c)) if c.is_ascii_digit() => {
                 return Self::read_number_token(text, iterator, error_reporter);
             }
             Some((_, c)) if c.is_whitespace() => {
@@ -132,7 +132,7 @@ impl<'source> Lexer {
     ) -> Option<SyntaxToken<'source>> {
         let (start, _) = iterator.next().unwrap();
         while let Some((_, c)) = iterator.peek() {
-            if !c.is_numeric() {
+            if !c.is_ascii_digit() {
                 break;
             }
             iterator.next();
