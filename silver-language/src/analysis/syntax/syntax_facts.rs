@@ -65,3 +65,24 @@ pub(crate) fn keyword_kind(text: &str) -> SyntaxKind {
         _ => SyntaxKind::IdentifierToken,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::analysis::{
+        errors::null_error_reporter::NullErrorReporter, syntax::syntax_tree::SyntaxTree,
+    };
+
+    use super::*;
+    use pretty_assertions::assert_eq;
+    use strum::IntoEnumIterator;
+
+    #[test]
+    fn get_text_round_trips() {
+        for (kind, text) in SyntaxKind::iter().filter_map(|k| k.get_text().map(|t| (k, t))) {
+            let tokens = SyntaxTree::parse_tokens(text, &mut NullErrorReporter::new());
+            assert_eq!(tokens.len(), 2);
+            assert_eq!(tokens[0].kind(), kind);
+            assert_eq!(tokens[0].text(), text);
+        }
+    }
+}
