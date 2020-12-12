@@ -215,6 +215,7 @@ mod tests {
 
     use super::syntax_facts::SyntaxKindWithText;
     use super::*;
+    use credibility::{aver, aver_eq, test_block, TestBlock, TestReporter};
 
     proptest! {
         #[test]
@@ -257,30 +258,35 @@ mod tests {
         ]
     }
 
-    fn lexer_lexes_token(input: &str, kind: SyntaxKind) {
+    fn lexer_lexes_token<T: TestReporter>(tb: &mut TestBlock<T>, input: &str, kind: SyntaxKind) {
         let mut error_reporter = StringErrorReporter::new();
         let tokens = Lexer::get_tokens(input, &mut error_reporter);
-        assert!(
+        aver!(
+            tb,
             !error_reporter.had_error(),
             "'{}' to lex successfully",
             input
         );
-        assert_eq!(2, tokens.len(), "'{}' to result in single token", input);
-        assert_eq!(
+        aver_eq!(tb, 2, tokens.len(), "'{}' to result in single token", input);
+        aver_eq!(
+            tb,
             kind,
             tokens[0].kind(),
             "'{}' to result in token with kind {}",
             input,
             kind
         );
-        assert_eq!(input, tokens[0].text(), "'{}' to round-trip", input);
+        aver_eq!(tb, input, tokens[0].text(), "'{}' to round-trip", input);
     }
 
     #[test]
     fn lexes_single_token() {
-        for (input, kind) in get_all_valid_tokens() {
-            lexer_lexes_token(input, kind);
-        }
+        test_block!(tb, "Lexing single tokens", {
+            for (input, kind) in get_all_valid_tokens() {
+                lexer_lexes_token(&mut tb, input, kind);
+            }
+            Ok(())
+        });
     }
 
     fn token_pair_requires_separator(t1kind: SyntaxKind, t2kind: SyntaxKind) -> bool {
@@ -298,40 +304,51 @@ mod tests {
             || t1kind == SyntaxKind::NumberToken && t2kind == SyntaxKind::NumberToken
     }
 
-    fn lexer_lexes_token_pair(t1text: &str, t1kind: SyntaxKind, t2text: &str, t2kind: SyntaxKind) {
+    fn lexer_lexes_token_pair<T: TestReporter>(
+        tb: &mut TestBlock<T>,
+        t1text: &str,
+        t1kind: SyntaxKind,
+        t2text: &str,
+        t2kind: SyntaxKind,
+    ) {
         let mut error_reporter = StringErrorReporter::new();
         let input = format!("{}{}", t1text, t2text);
         let tokens = Lexer::get_tokens(&input, &mut error_reporter);
         for error in error_reporter.errors() {
             println!("{}", error.message());
         }
-        assert!(
+        aver!(
+            tb,
             !error_reporter.had_error(),
             "'{}' to lex successfully",
             input
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             3,
             tokens.len(),
             "{} followed by {} to result in 2 tokens",
             t1kind,
             t2kind
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             t1kind,
             tokens[0].kind(),
             "'{}' to start with {}",
             input,
             t1kind
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             t2kind,
             tokens[1].kind(),
             "'{}' to end with {}",
             input,
             t2kind
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             input,
             format!("{}{}", tokens[0].text(), tokens[1].text()),
             "'{}' to round-trip",
@@ -339,7 +356,8 @@ mod tests {
         );
     }
 
-    fn lexer_lexes_token_pair_with_separator(
+    fn lexer_lexes_token_pair_with_separator<T: TestReporter>(
+        tb: &mut TestBlock<T>,
         t1text: &str,
         t1kind: SyntaxKind,
         separator_text: &str,
@@ -353,12 +371,14 @@ mod tests {
         for error in error_reporter.errors() {
             println!("{}", error.message());
         }
-        assert!(
+        aver!(
+            tb,
             !error_reporter.had_error(),
             "'{}' to lex successfully",
             input
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             4,
             tokens.len(),
             "{} : {} : {} to lex to 3 tokens",
@@ -366,28 +386,32 @@ mod tests {
             separator_kind,
             t2kind
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             t1kind,
             tokens[0].kind(),
             "'{}' to start with {}",
             input,
             t1kind
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             separator_kind,
             tokens[1].kind(),
             "'{}' to be separated by {}",
             input,
             separator_kind
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             t2kind,
             tokens[2].kind(),
             "'{}' to end with {}",
             input,
             t2kind
         );
-        assert_eq!(
+        aver_eq!(
+            tb,
             input,
             format!(
                 "{}{}{}",
@@ -402,23 +426,27 @@ mod tests {
 
     #[test]
     fn lexes_token_pairs() {
-        for (t1text, t1kind) in get_all_valid_tokens() {
-            for (t2text, t2kind) in get_all_valid_tokens() {
-                if token_pair_requires_separator(t1kind, t2kind) {
-                    for (separator_text, separator_kind) in get_all_separator_tokens() {
-                        lexer_lexes_token_pair_with_separator(
-                            t1text,
-                            t1kind,
-                            separator_text,
-                            separator_kind,
-                            t2text,
-                            t2kind,
-                        );
+        test_block!(tb, "Lexing token pairs", {
+            for (t1text, t1kind) in get_all_valid_tokens() {
+                for (t2text, t2kind) in get_all_valid_tokens() {
+                    if token_pair_requires_separator(t1kind, t2kind) {
+                        for (separator_text, separator_kind) in get_all_separator_tokens() {
+                            lexer_lexes_token_pair_with_separator(
+                                &mut tb,
+                                t1text,
+                                t1kind,
+                                separator_text,
+                                separator_kind,
+                                t2text,
+                                t2kind,
+                            );
+                        }
+                    } else {
+                        lexer_lexes_token_pair(&mut tb, t1text, t1kind, t2text, t2kind);
                     }
-                } else {
-                    lexer_lexes_token_pair(t1text, t1kind, t2text, t2kind);
                 }
             }
-        }
+            Ok(())
+        });
     }
 }
