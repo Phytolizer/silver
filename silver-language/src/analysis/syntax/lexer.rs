@@ -205,24 +205,14 @@ impl<'source> Lexer {
 
 #[cfg(test)]
 mod tests {
+    use credibility::{aver, aver_eq, test_block, TestBlock, TestReporter};
     use pretty_assertions::assert_eq;
-    use proptest::prelude::*;
     use strum::IntoEnumIterator;
 
-    use crate::analysis::errors::{
-        null_error_reporter::NullErrorReporter, string_error_reporter::StringErrorReporter,
-    };
+    use crate::analysis::errors::string_error_reporter::StringErrorReporter;
 
     use super::syntax_facts::SyntaxKindWithText;
     use super::*;
-    use credibility::{aver, aver_eq, test_block, TestBlock, TestReporter};
-
-    proptest! {
-        #[test]
-        fn no_crash(s in "\\PC*") {
-            Lexer::get_tokens(&s, &mut NullErrorReporter::new());
-        }
-    }
 
     fn get_all_valid_tokens() -> Vec<(&'static str, SyntaxKind)> {
         let static_tokens = SyntaxKind::iter()
@@ -261,22 +251,10 @@ mod tests {
     fn lexer_lexes_token<T: TestReporter>(tb: &mut TestBlock<T>, input: &str, kind: SyntaxKind) {
         let mut error_reporter = StringErrorReporter::new();
         let tokens = Lexer::get_tokens(input, &mut error_reporter);
-        aver!(
-            tb,
-            !error_reporter.had_error(),
-            "'{}' to lex successfully",
-            input
-        );
-        aver_eq!(tb, 2, tokens.len(), "'{}' to result in single token", input);
-        aver_eq!(
-            tb,
-            kind,
-            tokens[0].kind(),
-            "'{}' to result in token with kind {}",
-            input,
-            kind
-        );
-        aver_eq!(tb, input, tokens[0].text(), "'{}' to round-trip", input);
+        aver!(tb, !error_reporter.had_error());
+        aver_eq!(tb, 2, tokens.len());
+        aver_eq!(tb, kind, tokens[0].kind());
+        aver_eq!(tb, input, tokens[0].text());
     }
 
     #[test]
@@ -317,42 +295,14 @@ mod tests {
         for error in error_reporter.errors() {
             println!("{}", error.message());
         }
-        aver!(
-            tb,
-            !error_reporter.had_error(),
-            "'{}' to lex successfully",
-            input
-        );
-        aver_eq!(
-            tb,
-            3,
-            tokens.len(),
-            "{} followed by {} to result in 2 tokens",
-            t1kind,
-            t2kind
-        );
-        aver_eq!(
-            tb,
-            t1kind,
-            tokens[0].kind(),
-            "'{}' to start with {}",
-            input,
-            t1kind
-        );
-        aver_eq!(
-            tb,
-            t2kind,
-            tokens[1].kind(),
-            "'{}' to end with {}",
-            input,
-            t2kind
-        );
+        aver!(tb, !error_reporter.had_error());
+        aver_eq!(tb, 3, tokens.len());
+        aver_eq!(tb, t1kind, tokens[0].kind());
+        aver_eq!(tb, t2kind, tokens[1].kind());
         aver_eq!(
             tb,
             input,
-            format!("{}{}", tokens[0].text(), tokens[1].text()),
-            "'{}' to round-trip",
-            input
+            format!("{}{}", tokens[0].text(), tokens[1].text())
         );
     }
 
@@ -371,45 +321,11 @@ mod tests {
         for error in error_reporter.errors() {
             println!("{}", error.message());
         }
-        aver!(
-            tb,
-            !error_reporter.had_error(),
-            "'{}' to lex successfully",
-            input
-        );
-        aver_eq!(
-            tb,
-            4,
-            tokens.len(),
-            "{} : {} : {} to lex to 3 tokens",
-            t1kind,
-            separator_kind,
-            t2kind
-        );
-        aver_eq!(
-            tb,
-            t1kind,
-            tokens[0].kind(),
-            "'{}' to start with {}",
-            input,
-            t1kind
-        );
-        aver_eq!(
-            tb,
-            separator_kind,
-            tokens[1].kind(),
-            "'{}' to be separated by {}",
-            input,
-            separator_kind
-        );
-        aver_eq!(
-            tb,
-            t2kind,
-            tokens[2].kind(),
-            "'{}' to end with {}",
-            input,
-            t2kind
-        );
+        aver!(tb, !error_reporter.had_error());
+        aver_eq!(tb, 4, tokens.len());
+        aver_eq!(tb, t1kind, tokens[0].kind());
+        aver_eq!(tb, separator_kind, tokens[1].kind());
+        aver_eq!(tb, t2kind, tokens[2].kind());
         aver_eq!(
             tb,
             input,
@@ -418,9 +334,7 @@ mod tests {
                 tokens[0].text(),
                 tokens[1].text(),
                 tokens[2].text()
-            ),
-            "'{}' to round-trip",
-            input
+            )
         );
     }
 

@@ -169,13 +169,9 @@ mod tests {
         let mut error_reporter = StringErrorReporter::new();
         let actual_tree = Parser::parse(input, &mut error_reporter);
         for error in error_reporter.errors() {
-            dbg!(error.kind());
+            println!("{:?}", error.kind());
         }
-        assert!(
-            !error_reporter.had_error(),
-            "'{}' to parse successfully",
-            input
-        );
+        assert!(!error_reporter.had_error(),);
         assert_eq!(&expected_tree, actual_tree.root());
     }
 
