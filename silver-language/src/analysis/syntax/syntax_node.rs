@@ -12,6 +12,7 @@ pub trait SyntaxNodeExt {
     fn kind(&self) -> SyntaxKind;
     fn children(&self) -> Vec<&dyn SyntaxNodeExt>;
     fn value(&self) -> Option<&SilverValue>;
+    fn text(&self) -> Option<&str>;
     fn span(&self) -> TextSpan;
 }
 
@@ -28,6 +29,11 @@ impl<'source> SyntaxNodeExt for SyntaxNode<'source> {
 
     fn value(&self) -> Option<&SilverValue> {
         // Only tokens have values
+        None
+    }
+
+    fn text(&self) -> Option<&str> {
+        // Only tokens have text
         None
     }
 

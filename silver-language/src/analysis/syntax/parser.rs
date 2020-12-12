@@ -159,8 +159,14 @@ impl<'source, 'reporter> Parser<'source, 'reporter> {
 mod tests {
     use super::*;
     use crate::analysis::{
-        errors::string_error_reporter::StringErrorReporter, syntax::syntax_facts::Operator,
-        syntax::syntax_facts::SyntaxKindWithText,
+        errors::{
+            null_error_reporter::NullErrorReporter, string_error_reporter::StringErrorReporter,
+        },
+        syntax::syntax_facts::Operator,
+        syntax::{
+            syntax_facts::SyntaxKindWithText,
+            syntax_node::{flatten_tree, SyntaxNodeExt},
+        },
     };
     use pretty_assertions::assert_eq;
     use strum::IntoEnumIterator;
@@ -334,6 +340,36 @@ mod tests {
         )
     }
 
+    struct AssertingIterator<'n> {
+        nodes: Vec<&'n dyn SyntaxNodeExt>,
+        cursor: usize,
+    }
+
+    impl<'n> AssertingIterator<'n> {
+        fn new(node: &'n dyn SyntaxNodeExt) -> Self {
+            Self {
+                nodes: flatten_tree(node),
+                cursor: 0,
+            }
+        }
+
+        fn assert_token(&mut self, kind: SyntaxKind, text: &str) {
+            let node = self.nodes[self.cursor];
+            self.cursor += 1;
+
+            assert_eq!(node.kind(), kind);
+            assert_eq!(node.text().unwrap(), text);
+        }
+
+        fn assert_node(&mut self, kind: SyntaxKind) {
+            let node = self.nodes[self.cursor];
+            self.cursor += 1;
+
+            assert_eq!(node.kind(), kind);
+            assert!(node.text().is_none());
+        }
+    }
+
     fn check_binary_operators_parsing(
         op1kind: SyntaxKind,
         op1text: &str,
@@ -343,74 +379,32 @@ mod tests {
         let op1precedence = op1kind.binary_operator_precedence();
         let op2precedence = op2kind.binary_operator_precedence();
         let input = format!("a{}b{}c", op1text, op2text);
+        let tree = SyntaxTree::parse(&input, &mut NullErrorReporter::new());
+
+        let mut e = AssertingIterator::new(tree.root());
+
         if op1precedence >= op2precedence {
-            check(
-                &input,
-                ExpressionSyntax::Binary {
-                    left: Box::new(ExpressionSyntax::Binary {
-                        left: Box::new(ExpressionSyntax::Name {
-                            identifier_token: SyntaxToken::new(
-                                SyntaxKind::IdentifierToken,
-                                0,
-                                "a",
-                                None,
-                            ),
-                        }),
-                        operator: SyntaxToken::new(op1kind, 1, op1text, None),
-                        right: Box::new(ExpressionSyntax::Name {
-                            identifier_token: SyntaxToken::new(
-                                SyntaxKind::IdentifierToken,
-                                1 + op1text.len(),
-                                "b",
-                                None,
-                            ),
-                        }),
-                    }),
-                    operator: SyntaxToken::new(op2kind, 2 + op1text.len(), op2text, None),
-                    right: Box::new(ExpressionSyntax::Name {
-                        identifier_token: SyntaxToken::new(
-                            SyntaxKind::IdentifierToken,
-                            2 + op1text.len() + op2text.len(),
-                            "c",
-                            None,
-                        ),
-                    }),
-                },
-            )
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "a");
+            e.assert_token(op1kind, op1text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "b");
+            e.assert_token(op2kind, op2text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "c");
         } else {
-            check(
-                &input,
-                ExpressionSyntax::Binary {
-                    left: Box::new(ExpressionSyntax::Name {
-                        identifier_token: SyntaxToken::new(
-                            SyntaxKind::IdentifierToken,
-                            0,
-                            "a",
-                            None,
-                        ),
-                    }),
-                    operator: SyntaxToken::new(op1kind, 1, op1text, None),
-                    right: Box::new(ExpressionSyntax::Binary {
-                        left: Box::new(ExpressionSyntax::Name {
-                            identifier_token: SyntaxToken::new(
-                                SyntaxKind::IdentifierToken,
-                                1 + op1text.len(),
-                                "b",
-                                None,
-                            ),
-                        }),
-                        operator: SyntaxToken::new(op2kind, 2 + op1text.len(), op2text, None),
-                        right: Box::new(ExpressionSyntax::Name {
-                            identifier_token: SyntaxToken::new(
-                                SyntaxKind::IdentifierToken,
-                                2 + op1text.len() + op2text.len(),
-                                "c",
-                                None,
-                            ),
-                        }),
-                    }),
-                },
-            );
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "a");
+            e.assert_token(op1kind, op1text);
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "b");
+            e.assert_token(op2kind, op2text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "c");
         }
     }
 

@@ -74,6 +74,10 @@ impl<'source> SyntaxNodeExt for ExpressionSyntax<'source> {
         None
     }
 
+    fn text(&self) -> Option<&str> {
+        None
+    }
+
     fn span(&self) -> TextSpan {
         match self {
             ExpressionSyntax::Literal { literal_token, .. } => literal_token.span(),
