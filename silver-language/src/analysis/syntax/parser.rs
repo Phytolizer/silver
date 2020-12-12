@@ -357,16 +357,20 @@ mod tests {
             let node = self.nodes[self.cursor];
             self.cursor += 1;
 
-            assert_eq!(node.kind(), kind);
-            assert_eq!(node.text().unwrap(), text);
+            assert_eq!(kind, node.kind());
+            assert_eq!(text, node.text().unwrap());
         }
 
         fn assert_node(&mut self, kind: SyntaxKind) {
             let node = self.nodes[self.cursor];
             self.cursor += 1;
 
-            assert_eq!(node.kind(), kind);
+            assert_eq!(kind, node.kind());
             assert!(node.text().is_none());
+        }
+
+        fn assert_at_end(&self) {
+            assert_eq!(self.nodes.len(), self.cursor);
         }
     }
 
@@ -406,6 +410,7 @@ mod tests {
             e.assert_node(SyntaxKind::NameExpression);
             e.assert_token(SyntaxKind::IdentifierToken, "c");
         }
+        e.assert_at_end();
     }
 
     #[test]
@@ -413,6 +418,50 @@ mod tests {
         for (op1kind, op1text) in get_binary_operators() {
             for (op2kind, op2text) in get_binary_operators() {
                 check_binary_operators_parsing(op1kind, op1text, op2kind, op2text);
+            }
+        }
+    }
+
+    fn check_unary_binary_operators_parsing(
+        op1kind: SyntaxKind,
+        op1text: &str,
+        op2kind: SyntaxKind,
+        op2text: &str,
+    ) {
+        let op1precedence = op1kind.unary_operator_precedence();
+        let op2precedence = op2kind.binary_operator_precedence();
+        let input = format!("{}a{}b", op1text, op2text);
+        let tree = SyntaxTree::parse(&input, &mut NullErrorReporter::new());
+
+        let mut e = AssertingIterator::new(tree.root());
+
+        if op1precedence >= op2precedence {
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::UnaryExpression);
+            e.assert_token(op1kind, op1text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "a");
+            e.assert_token(op2kind, op2text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "b");
+        } else {
+            e.assert_node(SyntaxKind::UnaryExpression);
+            e.assert_token(op1kind, op1text);
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "a");
+            e.assert_token(op2kind, op2text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "b");
+        }
+        e.assert_at_end();
+    }
+
+    #[test]
+    fn unary_and_binary_operators_respect_precedence() {
+        for (op1kind, op1text) in get_unary_operators() {
+            for (op2kind, op2text) in get_binary_operators() {
+                check_unary_binary_operators_parsing(op1kind, op1text, op2kind, op2text);
             }
         }
     }
