@@ -71,7 +71,7 @@ impl<'variables> Evaluator<'variables> {
                 SilverValue::Integer(left.as_integer().unwrap() + right.as_integer().unwrap())
             }
             BoundBinaryOperatorKind::Subtraction => {
-                SilverValue::Integer(left.as_integer().unwrap() + right.as_integer().unwrap())
+                SilverValue::Integer(left.as_integer().unwrap() - right.as_integer().unwrap())
             }
             BoundBinaryOperatorKind::Multiplication => {
                 SilverValue::Integer(left.as_integer().unwrap() * right.as_integer().unwrap())
@@ -104,6 +104,61 @@ impl<'variables> Evaluator<'variables> {
             BoundUnaryOperatorKind::LogicalNegation => {
                 SilverValue::Boolean(!operand.as_boolean().unwrap())
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::analysis::{
+        compilation::Compilation,
+        errors::{error_reporter::ErrorReporter, string_error_reporter::StringErrorReporter},
+        syntax::syntax_tree::SyntaxTree,
+    };
+
+    use super::*;
+
+    fn check(text: &str, value: &SilverValue) {
+        let mut error_reporter = StringErrorReporter::new();
+        let syntax_tree = SyntaxTree::parse(text, &mut error_reporter);
+        let mut compilation = Compilation::new(syntax_tree, &mut error_reporter);
+        let mut variables = HashMap::<VariableSymbol, SilverValue>::new();
+        let result = compilation.evaluate(&mut variables);
+        assert_eq!(value, &result.unwrap());
+        assert!(!error_reporter.had_error());
+    }
+
+    #[test]
+    fn a() {
+        for (text, value) in [
+            ("1", SilverValue::Integer(1)),
+            ("+1", SilverValue::Integer(1)),
+            ("-1", SilverValue::Integer(-1)),
+            ("1 + 2", SilverValue::Integer(3)),
+            ("1 - 2", SilverValue::Integer(-1)),
+            ("1 * 2", SilverValue::Integer(2)),
+            ("1 / 2", SilverValue::Integer(0)),
+            ("(10)", SilverValue::Integer(10)),
+            ("12 == 3", SilverValue::Boolean(false)),
+            ("3 == 3", SilverValue::Boolean(true)),
+            ("12 != 3", SilverValue::Boolean(true)),
+            ("3 != 3", SilverValue::Boolean(false)),
+            ("true != false", SilverValue::Boolean(true)),
+            ("true == false", SilverValue::Boolean(false)),
+            ("true", SilverValue::Boolean(true)),
+            ("false", SilverValue::Boolean(false)),
+            ("!true", SilverValue::Boolean(false)),
+            ("!false", SilverValue::Boolean(true)),
+            ("a = 10", SilverValue::Integer(10)),
+            ("a = true", SilverValue::Boolean(true)),
+            ("true && false", SilverValue::Boolean(false)),
+            ("true && true", SilverValue::Boolean(true)),
+            ("false || false", SilverValue::Boolean(false)),
+            ("false || true", SilverValue::Boolean(true)),
+        ]
+        .iter()
+        {
+            check(text, value);
         }
     }
 }

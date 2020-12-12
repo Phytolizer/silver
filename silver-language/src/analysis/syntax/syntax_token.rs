@@ -25,6 +25,14 @@ impl<'source> SyntaxNodeExt for SyntaxToken<'source> {
     fn value(&self) -> Option<&SilverValue> {
         self.value()
     }
+
+    fn text(&self) -> Option<&str> {
+        Some(self.text)
+    }
+
+    fn span(&self) -> TextSpan {
+        self.span()
+    }
 }
 
 impl<'source> SyntaxToken<'source> {

@@ -1,9 +1,12 @@
-use std::io::{self, Write};
+use std::{
+    collections::VecDeque,
+    io::{self, Write},
+};
 
 use crate::analysis::errors::error_reporter::ErrorReporter;
 
 use super::{
-    expression_syntax::ExpressionSyntax, parser::Parser, syntax_node::SyntaxNodeExt,
+    expression_syntax::ExpressionSyntax, lexer::Lexer, parser::Parser, syntax_node::SyntaxNodeExt,
     syntax_token::SyntaxToken,
 };
 
@@ -27,6 +30,13 @@ impl<'source, 'reporter> SyntaxTree<'source> {
 
     pub fn parse(text: &'source str, error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
         Parser::parse(text, error_reporter)
+    }
+
+    pub fn parse_tokens(
+        text: &'source str,
+        error_reporter: &'reporter mut dyn ErrorReporter,
+    ) -> VecDeque<SyntaxToken<'source>> {
+        Lexer::get_tokens(text, error_reporter)
     }
 
     pub(crate) fn root(&self) -> &ExpressionSyntax {

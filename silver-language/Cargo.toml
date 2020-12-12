@@ -13,3 +13,4 @@ strum_macros = "0.20"
 [dev-dependencies]
 proptest = "0.10"
 pretty_assertions = "0.6"
+credibility = "0.1"

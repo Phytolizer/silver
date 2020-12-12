@@ -159,22 +159,25 @@ impl<'source, 'reporter> Parser<'source, 'reporter> {
 mod tests {
     use super::*;
     use crate::analysis::{
-        errors::string_error_reporter::StringErrorReporter, syntax::syntax_facts::Operator,
-        syntax::syntax_facts::SyntaxKindWithText,
+        errors::{
+            null_error_reporter::NullErrorReporter, string_error_reporter::StringErrorReporter,
+        },
+        syntax::syntax_facts::Operator,
+        syntax::{
+            syntax_facts::SyntaxKindWithText,
+            syntax_node::{flatten_tree, SyntaxNodeExt},
+        },
     };
+    use pretty_assertions::assert_eq;
     use strum::IntoEnumIterator;
 
     fn check(input: &str, expected_tree: ExpressionSyntax) {
         let mut error_reporter = StringErrorReporter::new();
         let actual_tree = Parser::parse(input, &mut error_reporter);
         for error in error_reporter.errors() {
-            dbg!(error.kind());
+            println!("{:?}", error.kind());
         }
-        assert!(
-            !error_reporter.had_error(),
-            "'{}' to parse successfully",
-            input
-        );
+        assert!(!error_reporter.had_error(),);
         assert_eq!(&expected_tree, actual_tree.root());
     }
 
@@ -274,6 +277,192 @@ mod tests {
                     }),
                 },
             )
+        }
+    }
+
+    #[test]
+    fn parse_parenthesized_expression() {
+        check(
+            "(1)",
+            ExpressionSyntax::Parenthesized {
+                open_parenthesis_token: SyntaxToken::new(
+                    SyntaxKind::OpenParenthesisToken,
+                    0,
+                    "(",
+                    None,
+                ),
+                expression: Box::new(ExpressionSyntax::Literal {
+                    literal_token: SyntaxToken::new(
+                        SyntaxKind::NumberToken,
+                        1,
+                        "1",
+                        Some(SilverValue::Integer(1)),
+                    ),
+                    value: None,
+                }),
+                close_parenthesis_token: SyntaxToken::new(
+                    SyntaxKind::CloseParenthesisToken,
+                    2,
+                    ")",
+                    None,
+                ),
+            },
+        )
+    }
+
+    #[test]
+    fn parse_name_expression() {
+        check(
+            "test",
+            ExpressionSyntax::Name {
+                identifier_token: SyntaxToken::new(SyntaxKind::IdentifierToken, 0, "test", None),
+            },
+        )
+    }
+
+    #[test]
+    fn parse_assignment_expression() {
+        check(
+            "a=2",
+            ExpressionSyntax::Assignment {
+                identifier_token: SyntaxToken::new(SyntaxKind::IdentifierToken, 0, "a", None),
+                equals_token: SyntaxToken::new(SyntaxKind::EqualsToken, 1, "=", None),
+                expression: Box::new(ExpressionSyntax::Literal {
+                    literal_token: SyntaxToken::new(
+                        SyntaxKind::NumberToken,
+                        2,
+                        "2",
+                        Some(SilverValue::Integer(2)),
+                    ),
+                    value: None,
+                }),
+            },
+        )
+    }
+
+    struct AssertingIterator<'n> {
+        nodes: Vec<&'n dyn SyntaxNodeExt>,
+        cursor: usize,
+    }
+
+    impl<'n> AssertingIterator<'n> {
+        fn new(node: &'n dyn SyntaxNodeExt) -> Self {
+            Self {
+                nodes: flatten_tree(node),
+                cursor: 0,
+            }
+        }
+
+        fn assert_token(&mut self, kind: SyntaxKind, text: &str) {
+            let node = self.nodes[self.cursor];
+            self.cursor += 1;
+
+            assert_eq!(kind, node.kind());
+            assert_eq!(text, node.text().unwrap());
+        }
+
+        fn assert_node(&mut self, kind: SyntaxKind) {
+            let node = self.nodes[self.cursor];
+            self.cursor += 1;
+
+            assert_eq!(kind, node.kind());
+            assert!(node.text().is_none());
+        }
+
+        fn assert_at_end(&self) {
+            assert_eq!(self.nodes.len(), self.cursor);
+        }
+    }
+
+    fn check_binary_operators_parsing(
+        op1kind: SyntaxKind,
+        op1text: &str,
+        op2kind: SyntaxKind,
+        op2text: &str,
+    ) {
+        let op1precedence = op1kind.binary_operator_precedence();
+        let op2precedence = op2kind.binary_operator_precedence();
+        let input = format!("a{}b{}c", op1text, op2text);
+        let tree = SyntaxTree::parse(&input, &mut NullErrorReporter::new());
+
+        let mut e = AssertingIterator::new(tree.root());
+
+        if op1precedence >= op2precedence {
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "a");
+            e.assert_token(op1kind, op1text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "b");
+            e.assert_token(op2kind, op2text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "c");
+        } else {
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "a");
+            e.assert_token(op1kind, op1text);
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "b");
+            e.assert_token(op2kind, op2text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "c");
+        }
+        e.assert_at_end();
+    }
+
+    #[test]
+    fn binary_operators_respect_precedence() {
+        for (op1kind, op1text) in get_binary_operators() {
+            for (op2kind, op2text) in get_binary_operators() {
+                check_binary_operators_parsing(op1kind, op1text, op2kind, op2text);
+            }
+        }
+    }
+
+    fn check_unary_binary_operators_parsing(
+        op1kind: SyntaxKind,
+        op1text: &str,
+        op2kind: SyntaxKind,
+        op2text: &str,
+    ) {
+        let op1precedence = op1kind.unary_operator_precedence();
+        let op2precedence = op2kind.binary_operator_precedence();
+        let input = format!("{}a{}b", op1text, op2text);
+        let tree = SyntaxTree::parse(&input, &mut NullErrorReporter::new());
+
+        let mut e = AssertingIterator::new(tree.root());
+
+        if op1precedence >= op2precedence {
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::UnaryExpression);
+            e.assert_token(op1kind, op1text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "a");
+            e.assert_token(op2kind, op2text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "b");
+        } else {
+            e.assert_node(SyntaxKind::UnaryExpression);
+            e.assert_token(op1kind, op1text);
+            e.assert_node(SyntaxKind::BinaryExpression);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "a");
+            e.assert_token(op2kind, op2text);
+            e.assert_node(SyntaxKind::NameExpression);
+            e.assert_token(SyntaxKind::IdentifierToken, "b");
+        }
+        e.assert_at_end();
+    }
+
+    #[test]
+    fn unary_and_binary_operators_respect_precedence() {
+        for (op1kind, op1text) in get_unary_operators() {
+            for (op2kind, op2text) in get_binary_operators() {
+                check_unary_binary_operators_parsing(op1kind, op1text, op2kind, op2text);
+            }
         }
     }
 }
