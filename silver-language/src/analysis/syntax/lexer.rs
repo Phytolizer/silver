@@ -213,6 +213,29 @@ mod tests {
 
     use super::syntax_facts::SyntaxKindWithText;
     use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn lexer_tests_all_tokens() {
+        let all_tokens = SyntaxKind::iter()
+            .filter(|k| k.to_string().ends_with("Token") || k.to_string().ends_with("Keyword"))
+            .collect::<HashSet<_>>();
+        let tested_tokens = get_all_valid_tokens()
+            .iter()
+            .chain(get_all_separator_tokens().iter())
+            .map(|&(_, k)| k)
+            .collect::<HashSet<_>>();
+        let untested_tokens = all_tokens
+            .difference(&tested_tokens)
+            .filter(|&&k| k != SyntaxKind::BadToken && k != SyntaxKind::EndOfFileToken)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        if !untested_tokens.is_empty() {
+            dbg!(&untested_tokens);
+        }
+        assert!(untested_tokens.is_empty());
+    }
 
     fn get_all_valid_tokens() -> Vec<(&'static str, SyntaxKind)> {
         let static_tokens = SyntaxKind::iter()
