@@ -146,7 +146,7 @@ impl<'source> Lexer {
             Ok(p) => p,
             Err(_) => {
                 error_reporter.report_invalid_number(start..position, text, SilverType::Integer);
-                return None;
+                return Some(SyntaxToken::new(SyntaxKind::BadToken, start, text, None));
             }
         };
         let value = Some(SilverValue::Integer(parsed));
@@ -205,11 +205,12 @@ impl<'source> Lexer {
 
 #[cfg(test)]
 mod tests {
-    use credibility::{aver, aver_eq, test_block, TestBlock, TestReporter};
     use pretty_assertions::assert_eq;
     use strum::IntoEnumIterator;
 
-    use crate::analysis::errors::string_error_reporter::StringErrorReporter;
+    use crate::analysis::{
+        diagnostic_kind::DiagnosticKind, errors::string_error_reporter::StringErrorReporter,
+    };
 
     use super::syntax_facts::SyntaxKindWithText;
     use super::*;
@@ -271,23 +272,20 @@ mod tests {
         ]
     }
 
-    fn lexer_lexes_token<T: TestReporter>(tb: &mut TestBlock<T>, input: &str, kind: SyntaxKind) {
+    fn lexer_lexes_token(input: &str, kind: SyntaxKind) {
         let mut error_reporter = StringErrorReporter::new();
         let tokens = Lexer::get_tokens(input, &mut error_reporter);
-        aver!(tb, !error_reporter.had_error());
-        aver_eq!(tb, 2, tokens.len());
-        aver_eq!(tb, kind, tokens[0].kind());
-        aver_eq!(tb, input, tokens[0].text());
+        assert!(!error_reporter.had_error());
+        assert_eq!(2, tokens.len());
+        assert_eq!(kind, tokens[0].kind());
+        assert_eq!(input, tokens[0].text());
     }
 
     #[test]
     fn lexes_single_token() {
-        test_block!(tb, "Lexing single tokens", {
-            for (input, kind) in get_all_valid_tokens() {
-                lexer_lexes_token(&mut tb, input, kind);
-            }
-            Ok(())
-        });
+        for (input, kind) in get_all_valid_tokens() {
+            lexer_lexes_token(input, kind);
+        }
     }
 
     fn token_pair_requires_separator(t1kind: SyntaxKind, t2kind: SyntaxKind) -> bool {
@@ -305,32 +303,21 @@ mod tests {
             || t1kind == SyntaxKind::NumberToken && t2kind == SyntaxKind::NumberToken
     }
 
-    fn lexer_lexes_token_pair<T: TestReporter>(
-        tb: &mut TestBlock<T>,
-        t1text: &str,
-        t1kind: SyntaxKind,
-        t2text: &str,
-        t2kind: SyntaxKind,
-    ) {
+    fn lexer_lexes_token_pair(t1text: &str, t1kind: SyntaxKind, t2text: &str, t2kind: SyntaxKind) {
         let mut error_reporter = StringErrorReporter::new();
         let input = format!("{}{}", t1text, t2text);
         let tokens = Lexer::get_tokens(&input, &mut error_reporter);
         for error in error_reporter.errors() {
             println!("{}", error.message());
         }
-        aver!(tb, !error_reporter.had_error());
-        aver_eq!(tb, 3, tokens.len());
-        aver_eq!(tb, t1kind, tokens[0].kind());
-        aver_eq!(tb, t2kind, tokens[1].kind());
-        aver_eq!(
-            tb,
-            input,
-            format!("{}{}", tokens[0].text(), tokens[1].text())
-        );
+        assert!(!error_reporter.had_error());
+        assert_eq!(3, tokens.len());
+        assert_eq!(t1kind, tokens[0].kind());
+        assert_eq!(t2kind, tokens[1].kind());
+        assert_eq!(input, format!("{}{}", tokens[0].text(), tokens[1].text()));
     }
 
-    fn lexer_lexes_token_pair_with_separator<T: TestReporter>(
-        tb: &mut TestBlock<T>,
+    fn lexer_lexes_token_pair_with_separator(
         t1text: &str,
         t1kind: SyntaxKind,
         separator_text: &str,
@@ -344,13 +331,12 @@ mod tests {
         for error in error_reporter.errors() {
             println!("{}", error.message());
         }
-        aver!(tb, !error_reporter.had_error());
-        aver_eq!(tb, 4, tokens.len());
-        aver_eq!(tb, t1kind, tokens[0].kind());
-        aver_eq!(tb, separator_kind, tokens[1].kind());
-        aver_eq!(tb, t2kind, tokens[2].kind());
-        aver_eq!(
-            tb,
+        assert!(!error_reporter.had_error());
+        assert_eq!(4, tokens.len());
+        assert_eq!(t1kind, tokens[0].kind());
+        assert_eq!(separator_kind, tokens[1].kind());
+        assert_eq!(t2kind, tokens[2].kind());
+        assert_eq!(
             input,
             format!(
                 "{}{}{}",
@@ -363,27 +349,54 @@ mod tests {
 
     #[test]
     fn lexes_token_pairs() {
-        test_block!(tb, "Lexing token pairs", {
-            for (t1text, t1kind) in get_all_valid_tokens() {
-                for (t2text, t2kind) in get_all_valid_tokens() {
-                    if token_pair_requires_separator(t1kind, t2kind) {
-                        for (separator_text, separator_kind) in get_all_separator_tokens() {
-                            lexer_lexes_token_pair_with_separator(
-                                &mut tb,
-                                t1text,
-                                t1kind,
-                                separator_text,
-                                separator_kind,
-                                t2text,
-                                t2kind,
-                            );
-                        }
-                    } else {
-                        lexer_lexes_token_pair(&mut tb, t1text, t1kind, t2text, t2kind);
+        for (t1text, t1kind) in get_all_valid_tokens() {
+            for (t2text, t2kind) in get_all_valid_tokens() {
+                if token_pair_requires_separator(t1kind, t2kind) {
+                    for (separator_text, separator_kind) in get_all_separator_tokens() {
+                        lexer_lexes_token_pair_with_separator(
+                            t1text,
+                            t1kind,
+                            separator_text,
+                            separator_kind,
+                            t2text,
+                            t2kind,
+                        );
                     }
+                } else {
+                    lexer_lexes_token_pair(t1text, t1kind, t2text, t2kind);
                 }
             }
-            Ok(())
-        });
+        }
+    }
+
+    #[test]
+    fn lex_bad_token() {
+        let mut error_reporter = StringErrorReporter::new();
+        let tokens = Lexer::get_tokens("$", &mut error_reporter);
+        assert_eq!(2, tokens.len());
+        assert_eq!(tokens[0].kind(), SyntaxKind::BadToken);
+        assert_eq!("", tokens[0].text());
+        assert_eq!(1, error_reporter.errors().len());
+        assert_eq!(
+            &DiagnosticKind::BadCharacter,
+            error_reporter.errors()[0].kind()
+        );
+    }
+
+    #[test]
+    fn lex_bad_number_literal() {
+        let mut error_reporter = StringErrorReporter::new();
+        let tokens = Lexer::get_tokens(
+            "483295734987984573189492137827598724983",
+            &mut error_reporter,
+        );
+        assert_eq!(2, tokens.len());
+        assert_eq!(SyntaxKind::BadToken, tokens[0].kind());
+        assert_eq!("483295734987984573189492137827598724983", tokens[0].text());
+        assert_eq!(1, error_reporter.errors().len());
+        assert_eq!(
+            &DiagnosticKind::BadLiteral(SilverType::Integer),
+            error_reporter.errors()[0].kind()
+        );
     }
 }
