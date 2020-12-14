@@ -1,11 +1,15 @@
 use crate::analysis::{silver_value::SilverValue, text::text_span::TextSpan};
 
-use super::{expression_syntax::ExpressionSyntax, syntax_kind::SyntaxKind};
+use super::{
+    compilation_unit_syntax::CompilationUnitSyntax, expression_syntax::ExpressionSyntax,
+    syntax_kind::SyntaxKind,
+};
 
 // TODO this enum won't be used for a while.
 #[allow(dead_code)]
 pub enum SyntaxNode {
     Expression(ExpressionSyntax),
+    CompilationUnit(CompilationUnitSyntax),
 }
 
 pub trait SyntaxNodeExt {
@@ -24,6 +28,7 @@ impl SyntaxNodeExt for SyntaxNode {
     fn children(&self) -> Vec<&dyn SyntaxNodeExt> {
         match self {
             SyntaxNode::Expression(e) => vec![e],
+            SyntaxNode::CompilationUnit(c) => vec![c.expression()],
         }
     }
 
@@ -40,6 +45,7 @@ impl SyntaxNodeExt for SyntaxNode {
     fn span(&self) -> TextSpan {
         match self {
             SyntaxNode::Expression(e) => e.span(),
+            SyntaxNode::CompilationUnit(c) => c.span(),
         }
     }
 }

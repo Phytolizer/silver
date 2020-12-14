@@ -26,7 +26,7 @@ impl<'syntax, 'reporter> Compilation<'syntax, 'reporter> {
         variables: &mut HashMap<VariableSymbol, SilverValue>,
     ) -> Option<SilverValue> {
         let mut binder = Binder::new(variables, self.error_reporter);
-        let bound_tree = binder.bind(self.syntax.root());
+        let bound_tree = binder.bind(self.syntax.root().expression());
         if self.error_reporter.had_error() {
             return None;
         }

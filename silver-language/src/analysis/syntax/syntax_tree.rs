@@ -11,33 +11,24 @@ use std::{
 use crate::analysis::{errors::error_reporter::ErrorReporter, text::source_text::SourceText};
 
 use super::{
-    expression_syntax::ExpressionSyntax, lexer::Lexer, parser::Parser, syntax_node::SyntaxNodeExt,
-    syntax_token::SyntaxToken,
+    compilation_unit_syntax::CompilationUnitSyntax, lexer::Lexer, parser::Parser,
+    syntax_node::SyntaxNodeExt, syntax_token::SyntaxToken,
 };
 
 pub struct SyntaxTree {
-    root: ExpressionSyntax,
-    // TODO the end-of-file token will be used for diagnostics
-    #[allow(dead_code)]
-    end_of_file_token: SyntaxToken,
+    root: CompilationUnitSyntax,
     text: Arc<SourceText>,
 }
 
 impl<'reporter> SyntaxTree {
-    pub(crate) fn new(
-        root: ExpressionSyntax,
-        end_of_file_token: SyntaxToken,
-        text: Arc<SourceText>,
-    ) -> Self {
-        Self {
-            root,
-            end_of_file_token,
-            text,
-        }
+    fn new(text: Arc<SourceText>, error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
+        let root = Parser::parse_compilation_unit(text.clone(), error_reporter);
+
+        Self { text, root }
     }
 
-    fn parse(text: Arc<SourceText>, error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
-        Parser::parse(text, error_reporter)
+    pub fn parse(text: Arc<SourceText>, error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
+        Self::new(text, error_reporter)
     }
 
     pub fn parse_str<S: AsRef<str>>(
@@ -57,7 +48,7 @@ impl<'reporter> SyntaxTree {
         Lexer::get_tokens(text, error_reporter)
     }
 
-    pub(crate) fn root(&self) -> &ExpressionSyntax {
+    pub(crate) fn root(&self) -> &CompilationUnitSyntax {
         &self.root
     }
 

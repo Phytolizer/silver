@@ -5,8 +5,8 @@ use crate::analysis::{
 };
 
 use super::{
-    expression_syntax::ExpressionSyntax, lexer::Lexer, syntax_facts::Operator,
-    syntax_kind::SyntaxKind, syntax_token::SyntaxToken, syntax_tree::SyntaxTree,
+    compilation_unit_syntax::CompilationUnitSyntax, expression_syntax::ExpressionSyntax,
+    lexer::Lexer, syntax_facts::Operator, syntax_kind::SyntaxKind, syntax_token::SyntaxToken,
 };
 
 pub(crate) struct Parser<'reporter> {
@@ -25,10 +25,10 @@ impl<'reporter> Parser<'reporter> {
         }
     }
 
-    pub(crate) fn parse(
+    pub(crate) fn parse_compilation_unit(
         text: Arc<SourceText>,
         error_reporter: &'reporter mut dyn ErrorReporter,
-    ) -> SyntaxTree {
+    ) -> CompilationUnitSyntax {
         let tokens = Lexer::get_tokens(text.clone(), error_reporter)
             .iter()
             .filter(|t| t.kind() != SyntaxKind::WhitespaceToken && t.kind() != SyntaxKind::BadToken)
@@ -37,7 +37,7 @@ impl<'reporter> Parser<'reporter> {
         let mut parser = Self::new(tokens, error_reporter);
         let expression = parser.parse_expression();
         let end_of_file = parser.match_token(SyntaxKind::EndOfFileToken);
-        SyntaxTree::new(expression, end_of_file, text)
+        CompilationUnitSyntax::new(expression, end_of_file)
     }
 
     fn parse_expression(&mut self) -> ExpressionSyntax {
@@ -181,6 +181,7 @@ mod tests {
         syntax::{
             syntax_facts::SyntaxKindWithText,
             syntax_node::{flatten_tree, SyntaxNodeExt},
+            syntax_tree::SyntaxTree,
         },
     };
     use pretty_assertions::assert_eq;
@@ -188,12 +189,13 @@ mod tests {
 
     fn check(input: &str, expected_tree: ExpressionSyntax) {
         let mut error_reporter = StringErrorReporter::new();
-        let actual_tree = Parser::parse(Arc::new(input.to_string().into()), &mut error_reporter);
+        let actual_tree =
+            Parser::parse_compilation_unit(Arc::new(input.to_string().into()), &mut error_reporter);
         for error in error_reporter.errors() {
             println!("{:?}", error.kind());
         }
         assert!(!error_reporter.had_error(),);
-        assert_eq!(&expected_tree, actual_tree.root());
+        assert_eq!(&expected_tree, actual_tree.expression());
     }
 
     #[test]
@@ -503,7 +505,7 @@ mod tests {
 
     fn check_bad(input: &str, expected_errors: Vec<DiagnosticKind>) {
         let mut error_reporter = StringErrorReporter::new();
-        Parser::parse(
+        Parser::parse_compilation_unit(
             Arc::new(SourceText::from(input.to_string())),
             &mut error_reporter,
         );

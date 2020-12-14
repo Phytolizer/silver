@@ -31,6 +31,7 @@ pub enum SyntaxKind {
 
     // Nodes
     Root,
+    CompilationUnit,
 
     // Expressions
     LiteralExpression,
