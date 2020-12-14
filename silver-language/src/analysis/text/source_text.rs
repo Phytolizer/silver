@@ -37,6 +37,9 @@ impl SourceText {
         if position > line_start {
             result.push(TextLine::new(line_start, position, position));
         }
+        if text.len() == 0 {
+            result.push(TextLine::new(0, 0, 0));
+        }
 
         result
     }

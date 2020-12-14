@@ -173,6 +173,7 @@ impl<'reporter> Parser<'reporter> {
 mod tests {
     use super::*;
     use crate::analysis::{
+        diagnostic_kind::DiagnosticKind,
         errors::{
             null_error_reporter::NullErrorReporter, string_error_reporter::StringErrorReporter,
         },
@@ -498,5 +499,85 @@ mod tests {
                 check_unary_binary_operators_parsing(op1kind, op1text, op2kind, op2text);
             }
         }
+    }
+
+    fn check_bad(input: &str, expected_errors: Vec<DiagnosticKind>) {
+        let mut error_reporter = StringErrorReporter::new();
+        Parser::parse(
+            Arc::new(SourceText::from(input.to_string())),
+            &mut error_reporter,
+        );
+        assert_eq!(expected_errors.len(), error_reporter.errors().len());
+        for (expected_error, actual_error) in
+            expected_errors.iter().zip(error_reporter.errors().iter())
+        {
+            assert_eq!(expected_error, actual_error.kind());
+        }
+    }
+
+    #[test]
+    fn empty_input() {
+        check_bad(
+            "",
+            vec![DiagnosticKind::UnexpectedToken {
+                expected_kind: SyntaxKind::IdentifierToken,
+                actual_kind: SyntaxKind::EndOfFileToken,
+            }],
+        )
+    }
+
+    #[test]
+    fn missing_unary_operand() {
+        check_bad(
+            "+",
+            vec![DiagnosticKind::UnexpectedToken {
+                expected_kind: SyntaxKind::IdentifierToken,
+                actual_kind: SyntaxKind::EndOfFileToken,
+            }],
+        );
+    }
+
+    #[test]
+    fn missing_binary_operand_left() {
+        check_bad(
+            "*1",
+            vec![DiagnosticKind::UnexpectedToken {
+                expected_kind: SyntaxKind::IdentifierToken,
+                actual_kind: SyntaxKind::StarToken,
+            }],
+        );
+    }
+
+    #[test]
+    fn missing_binary_operand_right() {
+        check_bad(
+            "1+",
+            vec![DiagnosticKind::UnexpectedToken {
+                expected_kind: SyntaxKind::IdentifierToken,
+                actual_kind: SyntaxKind::EndOfFileToken,
+            }],
+        );
+    }
+
+    #[test]
+    fn missing_open_parenthesis() {
+        check_bad(
+            "1)",
+            vec![DiagnosticKind::UnexpectedToken {
+                expected_kind: SyntaxKind::EndOfFileToken,
+                actual_kind: SyntaxKind::CloseParenthesisToken,
+            }],
+        );
+    }
+
+    #[test]
+    fn missing_close_parenthesis() {
+        check_bad(
+            "(1",
+            vec![DiagnosticKind::UnexpectedToken {
+                expected_kind: SyntaxKind::CloseParenthesisToken,
+                actual_kind: SyntaxKind::EndOfFileToken,
+            }],
+        );
     }
 }
