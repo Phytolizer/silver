@@ -129,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn a() {
+    fn evaluates_correctly() {
         for (text, value) in [
             ("1", SilverValue::Integer(1)),
             ("+1", SilverValue::Integer(1)),
