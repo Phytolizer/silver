@@ -1,6 +1,10 @@
+use crossterm::{
+    style::{Color, ResetColor, SetForegroundColor},
+    ExecutableCommand,
+};
 use std::{
     collections::VecDeque,
-    io::{self, Write},
+    io::{stdout, Write},
     sync::Arc,
 };
 
@@ -61,30 +65,54 @@ impl<'reporter> SyntaxTree {
         &self.text
     }
 
-    pub fn pretty_print(&self, writer: &mut dyn Write) -> io::Result<()> {
-        self.pretty_print_recursive(&self.root, writer, String::new(), true)
+    pub fn pretty_print(&self) -> anyhow::Result<()> {
+        self.pretty_print_recursive(&self.root, &mut stdout(), true, String::new(), true)
+    }
+
+    pub fn pretty_print_to(&self, writer: &mut dyn Write) -> anyhow::Result<()> {
+        self.pretty_print_recursive(&self.root, writer, false, String::new(), true)
     }
 
     fn pretty_print_recursive(
         &self,
         root: &dyn SyntaxNodeExt,
-        writer: &mut dyn Write,
+        mut writer: &mut dyn Write,
+        writer_is_stdout: bool,
         mut indent: String,
         is_last: bool,
-    ) -> io::Result<()> {
+    ) -> anyhow::Result<()> {
         write!(writer, "{}", indent)?;
+        if writer_is_stdout {
+            writer.execute(SetForegroundColor(Color::Grey))?;
+        }
         write!(writer, "{}", if is_last { "\\--" } else { "+--" })?;
+        if writer_is_stdout {
+            writer.execute(SetForegroundColor(
+                if root.kind().to_string().ends_with("Token")
+                    || root.kind().to_string().ends_with("Keyword")
+                {
+                    Color::Blue
+                } else {
+                    Color::Cyan
+                },
+            ))?;
+        }
         write!(writer, "{}", root.kind())?;
         if let Some(value) = root.value() {
             write!(writer, " {}", value)?;
         }
         writeln!(writer)?;
 
+        if writer_is_stdout {
+            writer.execute(ResetColor)?;
+        }
+
         indent += if is_last { "   " } else { "|  " };
         for (i, &child) in root.children().iter().enumerate() {
             self.pretty_print_recursive(
                 child,
                 writer,
+                writer_is_stdout,
                 indent.clone(),
                 i == root.children().len() - 1,
             )?;

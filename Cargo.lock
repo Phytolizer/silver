@@ -526,7 +526,9 @@ dependencies = [
 name = "silver-language"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "credibility",
+ "crossterm",
  "derive_more",
  "pretty_assertions",
  "proptest",
