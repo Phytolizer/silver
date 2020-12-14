@@ -124,7 +124,9 @@ fn main() -> anyhow::Result<()> {
                 writeln!(stdout)?;
             }
         } else {
+            stdout.execute(SetForegroundColor(Color::Magenta))?;
             writeln!(stdout, "{}", value.unwrap())?;
+            stdout.execute(ResetColor)?;
         }
         text_builder.clear();
     }
