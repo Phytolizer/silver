@@ -35,7 +35,7 @@ fn main() -> anyhow::Result<()> {
         stdout.execute(SetAttribute(Attribute::Bold))?;
         write!(stdout, "silver ")?;
         stdout.execute(SetForegroundColor(Color::Green))?;
-        if text_builder.len() == 0 {
+        if text_builder.is_empty() {
             write!(stdout, "➤")?;
         } else {
             write!(stdout, "|")?;
