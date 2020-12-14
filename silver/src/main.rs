@@ -54,7 +54,7 @@ fn main() -> anyhow::Result<()> {
             break;
         }
         // check for meta-commands
-        if text_builder.len() == 0 {
+        if text_builder.is_empty() {
             match input.trim() {
                 "#help" => {
                     writeln!(stdout, " -- HELP --")?;
