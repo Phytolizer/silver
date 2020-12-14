@@ -151,7 +151,7 @@ impl<'reporter> Parser<'reporter> {
         if self.tokens.len() > 1 {
             self.tokens.pop_front().unwrap()
         } else {
-            self.tokens[0].clone()
+            self.current().clone()
         }
     }
 
@@ -164,7 +164,7 @@ impl<'reporter> Parser<'reporter> {
                 self.current().kind(),
                 kind,
             );
-            SyntaxToken::new(kind, self.tokens[0].position(), String::new(), None)
+            SyntaxToken::new(kind, self.current().position(), String::new(), None)
         }
     }
 }
