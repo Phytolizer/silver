@@ -22,10 +22,11 @@ mod view_options;
 fn main() -> anyhow::Result<()> {
     let mut stdout = io::stdout();
     let mut reader = BufReader::new(io::stdin());
-    let mut line = String::new();
+    let mut input = String::new();
     let mut view_options = ViewOptions::default();
     let mut error_reporter = StringErrorReporter::new();
     let mut variables = HashMap::<VariableSymbol, SilverValue>::new();
+    let mut text_builder = String::new();
 
     loop {
         error_reporter.clear();
@@ -34,65 +35,85 @@ fn main() -> anyhow::Result<()> {
         stdout.execute(SetAttribute(Attribute::Bold))?;
         write!(stdout, "silver ")?;
         stdout.execute(SetForegroundColor(Color::Green))?;
-        write!(stdout, "➤")?;
+        if text_builder.is_empty() {
+            write!(stdout, "➤")?;
+        } else {
+            write!(stdout, "|")?;
+        }
         stdout.execute(ResetColor)?;
         stdout.execute(SetAttribute(Attribute::Reset))?;
         write!(stdout, " ")?;
         stdout.flush()?;
 
-        line.clear();
-        if reader.read_line(&mut line)? == 0 {
+        input.clear();
+        if reader.read_line(&mut input)? == 0 {
             break;
         }
-
+        let is_blank = input.chars().all(|c| c.is_whitespace()) || input.is_empty();
+        if is_blank && text_builder.is_empty() {
+            break;
+        }
         // check for meta-commands
-        match line.trim() {
-            "#help" => {
-                writeln!(stdout, " -- HELP --")?;
-                writeln!(stdout, "#showTree : Show/hide parse trees")?;
-                writeln!(stdout, "#cls      : Clear the console")?;
-                continue;
+        if text_builder.is_empty() {
+            match input.trim() {
+                "#help" => {
+                    writeln!(stdout, " -- HELP --")?;
+                    writeln!(stdout, "#showTree : Show/hide parse trees")?;
+                    writeln!(stdout, "#cls      : Clear the console")?;
+                    continue;
+                }
+                "#showTree" => {
+                    view_options.show_tree = !view_options.show_tree;
+                    writeln!(
+                        stdout,
+                        "{}",
+                        if view_options.show_tree {
+                            "Showing parse trees."
+                        } else {
+                            "Not showing parse trees."
+                        }
+                    )?;
+                    continue;
+                }
+                "#cls" => {
+                    stdout.execute(Clear(ClearType::All))?;
+                    continue;
+                }
+                _ => {}
             }
-            "#showTree" => {
-                view_options.show_tree = !view_options.show_tree;
-                writeln!(
-                    stdout,
-                    "{}",
-                    if view_options.show_tree {
-                        "Showing parse trees."
-                    } else {
-                        "Not showing parse trees."
-                    }
-                )?;
-                continue;
-            }
-            "#cls" => {
-                stdout.execute(Clear(ClearType::All))?;
-                continue;
-            }
-            _ => {}
         }
 
+        text_builder += &input;
         // evaluate the line
-        stdout.execute(SetForegroundColor(Color::Blue))?;
-        write!(stdout, "Executing")?;
-        stdout.execute(ResetColor)?;
-        writeln!(stdout, " '{}'", line.trim())?;
-        let parse_tree = SyntaxTree::parse(line.trim(), &mut error_reporter);
+        let parse_tree = SyntaxTree::parse_str(&text_builder, &mut error_reporter);
+        if !is_blank && error_reporter.had_error() {
+            error_reporter.clear();
+            continue;
+        }
         if view_options.show_tree {
             parse_tree.pretty_print(&mut stdout)?;
         }
-        let mut compilation = Compilation::new(parse_tree, &mut error_reporter);
+        let mut compilation = Compilation::new(&parse_tree, &mut error_reporter);
         let value = compilation.evaluate(&mut variables);
         if error_reporter.had_error() {
             for error in error_reporter.errors() {
+                let line_index = parse_tree.text().get_line_index(error.span().start);
+                let line_number = line_index + 1;
+                let line = &parse_tree.text().lines()[line_index];
+                let character = error.span().start - line.start() + 1;
                 stdout.execute(SetForegroundColor(Color::Red))?;
                 writeln!(stdout)?;
-                writeln!(stdout, "ERROR: {}", error.message())?;
+                writeln!(
+                    stdout,
+                    "({}, {}) ERROR: {}",
+                    line_number,
+                    character,
+                    error.message()
+                )?;
 
-                let prefix = &line[..error.span().start];
-                let highlight = &line[error.span()];
-                let suffix = &line[error.span().end..];
+                let prefix = &text_builder[line.start()..error.span().start];
+                let highlight = &text_builder[error.span()];
+                let suffix = &text_builder[error.span().end..line.end_including_line_break()];
 
                 stdout.execute(ResetColor)?;
                 write!(stdout, "    {}", prefix)?;
@@ -105,6 +126,7 @@ fn main() -> anyhow::Result<()> {
         } else {
             writeln!(stdout, "{}", value.unwrap())?;
         }
+        text_builder.clear();
     }
     Ok(())
 }

@@ -1,46 +1,64 @@
 use std::{
     collections::VecDeque,
     io::{self, Write},
+    sync::Arc,
 };
 
-use crate::analysis::errors::error_reporter::ErrorReporter;
+use crate::analysis::{errors::error_reporter::ErrorReporter, text::source_text::SourceText};
 
 use super::{
     expression_syntax::ExpressionSyntax, lexer::Lexer, parser::Parser, syntax_node::SyntaxNodeExt,
     syntax_token::SyntaxToken,
 };
 
-pub struct SyntaxTree<'source> {
-    root: ExpressionSyntax<'source>,
+pub struct SyntaxTree {
+    root: ExpressionSyntax,
     // TODO the end-of-file token will be used for diagnostics
     #[allow(dead_code)]
-    end_of_file_token: SyntaxToken<'source>,
+    end_of_file_token: SyntaxToken,
+    text: Arc<SourceText>,
 }
 
-impl<'source, 'reporter> SyntaxTree<'source> {
+impl<'reporter> SyntaxTree {
     pub(crate) fn new(
-        root: ExpressionSyntax<'source>,
-        end_of_file_token: SyntaxToken<'source>,
+        root: ExpressionSyntax,
+        end_of_file_token: SyntaxToken,
+        text: Arc<SourceText>,
     ) -> Self {
         Self {
             root,
             end_of_file_token,
+            text,
         }
     }
 
-    pub fn parse(text: &'source str, error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
+    fn parse(text: Arc<SourceText>, error_reporter: &'reporter mut dyn ErrorReporter) -> Self {
         Parser::parse(text, error_reporter)
     }
 
-    pub fn parse_tokens(
-        text: &'source str,
+    pub fn parse_str<S: AsRef<str>>(
+        text: S,
         error_reporter: &'reporter mut dyn ErrorReporter,
-    ) -> VecDeque<SyntaxToken<'source>> {
+    ) -> Self {
+        Self::parse(
+            Arc::new(SourceText::from(text.as_ref().to_string())),
+            error_reporter,
+        )
+    }
+
+    pub fn parse_tokens(
+        text: Arc<SourceText>,
+        error_reporter: &'reporter mut dyn ErrorReporter,
+    ) -> VecDeque<SyntaxToken> {
         Lexer::get_tokens(text, error_reporter)
     }
 
     pub(crate) fn root(&self) -> &ExpressionSyntax {
         &self.root
+    }
+
+    pub fn text(&self) -> &SourceText {
+        &self.text
     }
 
     pub fn pretty_print(&self, writer: &mut dyn Write) -> io::Result<()> {

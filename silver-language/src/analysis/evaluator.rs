@@ -120,8 +120,8 @@ mod tests {
 
     fn check(text: &str, value: &SilverValue) {
         let mut error_reporter = StringErrorReporter::new();
-        let syntax_tree = SyntaxTree::parse(text, &mut error_reporter);
-        let mut compilation = Compilation::new(syntax_tree, &mut error_reporter);
+        let syntax_tree = SyntaxTree::parse_str(text, &mut error_reporter);
+        let mut compilation = Compilation::new(&syntax_tree, &mut error_reporter);
         let mut variables = HashMap::<VariableSymbol, SilverValue>::new();
         let result = compilation.evaluate(&mut variables);
         assert_eq!(value, &result.unwrap());
@@ -129,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn a() {
+    fn evaluates_correctly() {
         for (text, value) in [
             ("1", SilverValue::Integer(1)),
             ("+1", SilverValue::Integer(1)),

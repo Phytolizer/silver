@@ -5,14 +5,14 @@ use super::{
     silver_value::SilverValue, syntax::syntax_tree::SyntaxTree, variable_symbol::VariableSymbol,
 };
 
-pub struct Compilation<'source, 'reporter> {
-    syntax: SyntaxTree<'source>,
+pub struct Compilation<'syntax, 'reporter> {
+    syntax: &'syntax SyntaxTree,
     error_reporter: &'reporter mut dyn ErrorReporter,
 }
 
-impl<'source, 'reporter> Compilation<'source, 'reporter> {
+impl<'syntax, 'reporter> Compilation<'syntax, 'reporter> {
     pub fn new(
-        syntax: SyntaxTree<'source>,
+        syntax: &'syntax SyntaxTree,
         error_reporter: &'reporter mut dyn ErrorReporter,
     ) -> Self {
         Self {

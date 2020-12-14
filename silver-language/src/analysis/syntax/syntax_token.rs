@@ -5,15 +5,15 @@ use crate::analysis::{silver_value::SilverValue, text::text_span::TextSpan};
 use super::{syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct SyntaxToken<'source> {
+pub struct SyntaxToken {
     kind: SyntaxKind,
     position: usize,
-    text: &'source str,
+    text: String,
     value: Option<SilverValue>,
     span: TextSpan,
 }
 
-impl<'source> SyntaxNodeExt for SyntaxToken<'source> {
+impl SyntaxNodeExt for SyntaxToken {
     fn children(&self) -> Vec<&dyn SyntaxNodeExt> {
         vec![]
     }
@@ -27,7 +27,7 @@ impl<'source> SyntaxNodeExt for SyntaxToken<'source> {
     }
 
     fn text(&self) -> Option<&str> {
-        Some(self.text)
+        Some(&self.text)
     }
 
     fn span(&self) -> TextSpan {
@@ -35,19 +35,19 @@ impl<'source> SyntaxNodeExt for SyntaxToken<'source> {
     }
 }
 
-impl<'source> SyntaxToken<'source> {
+impl SyntaxToken {
     pub(crate) fn new(
         kind: SyntaxKind,
         position: usize,
-        text: &'source str,
+        text: String,
         value: Option<SilverValue>,
     ) -> Self {
         Self {
+            span: position..position + text.len(),
             kind,
             position,
             text,
             value,
-            span: position..position + text.len(),
         }
     }
 
@@ -60,7 +60,7 @@ impl<'source> SyntaxToken<'source> {
     }
 
     pub fn text(&self) -> &str {
-        self.text
+        &self.text
     }
 
     pub fn value(&self) -> Option<&SilverValue> {
@@ -72,7 +72,7 @@ impl<'source> SyntaxToken<'source> {
     }
 }
 
-impl<'source> Display for SyntaxToken<'source> {
+impl Display for SyntaxToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}: '{}'", self.kind, self.text)?;
         if let Some(value) = &self.value {
