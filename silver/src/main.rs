@@ -113,7 +113,7 @@ fn main() -> anyhow::Result<()> {
 
                 let prefix = &text_builder[line.start()..error.span().start];
                 let highlight = &text_builder[error.span()];
-                let suffix = &text_builder[error.span().end..line.end_including_line_break()];
+                let suffix = &text_builder[error.span().end..line.end()];
 
                 stdout.execute(ResetColor)?;
                 write!(stdout, "    {}", prefix)?;

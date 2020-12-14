@@ -34,7 +34,7 @@ impl SourceText {
                 position += 1;
             }
         }
-        if position > line_start {
+        if position >= line_start {
             result.push(TextLine::new(line_start, position, position));
         }
         if text.is_empty() {
