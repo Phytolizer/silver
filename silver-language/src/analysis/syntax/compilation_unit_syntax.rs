@@ -1,4 +1,4 @@
-use crate::analysis::text::text_span::TextSpan;
+use crate::analysis::{silver_value::SilverValue, text::text_span::TextSpan};
 
 use super::{
     expression_syntax::ExpressionSyntax, syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt,
@@ -36,7 +36,7 @@ impl SyntaxNodeExt for CompilationUnitSyntax {
         vec![&self.expression, &self.end_of_file_token]
     }
 
-    fn value(&self) -> Option<&crate::analysis::silver_value::SilverValue> {
+    fn value(&self) -> Option<&SilverValue> {
         None
     }
 
