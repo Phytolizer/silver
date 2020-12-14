@@ -85,10 +85,6 @@ fn main() -> anyhow::Result<()> {
 
         text_builder += &input;
         // evaluate the line
-        stdout.execute(SetForegroundColor(Color::Blue))?;
-        write!(stdout, "Executing")?;
-        stdout.execute(ResetColor)?;
-        writeln!(stdout, " '{}'", input.trim())?;
         let parse_tree = SyntaxTree::parse_str(&text_builder, &mut error_reporter);
         if !is_blank && error_reporter.had_error() {
             error_reporter.clear();
