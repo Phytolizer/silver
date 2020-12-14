@@ -34,6 +34,9 @@ impl SourceText {
                 position += 1;
             }
         }
+        if position > line_start {
+            result.push(TextLine::new(line_start, position, position));
+        }
 
         result
     }
@@ -69,6 +72,10 @@ impl SourceText {
             }
         }
         lower - 1
+    }
+
+    pub fn lines(&self) -> &[TextLine] {
+        &self.lines
     }
 
     pub fn char_indices(&self) -> impl Iterator<Item = (usize, char)> + '_ {

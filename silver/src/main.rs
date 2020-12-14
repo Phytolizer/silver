@@ -82,13 +82,24 @@ fn main() -> anyhow::Result<()> {
         if view_options.show_tree {
             parse_tree.pretty_print(&mut stdout)?;
         }
-        let mut compilation = Compilation::new(parse_tree, &mut error_reporter);
+        let mut compilation = Compilation::new(&parse_tree, &mut error_reporter);
         let value = compilation.evaluate(&mut variables);
         if error_reporter.had_error() {
+            let text = parse_tree.text();
             for error in error_reporter.errors() {
+                let line_index = text.get_line_index(error.span().start);
+                let line_number = line_index + 1;
+                let text_line = &text.lines()[line_index];
+                let character = error.span().start - text_line.start() + 1;
                 stdout.execute(SetForegroundColor(Color::Red))?;
                 writeln!(stdout)?;
-                writeln!(stdout, "ERROR: {}", error.message())?;
+                writeln!(
+                    stdout,
+                    "({}, {}) ERROR: {}",
+                    line_number,
+                    character,
+                    error.message()
+                )?;
 
                 let prefix = &line[..error.span().start];
                 let highlight = &line[error.span()];
