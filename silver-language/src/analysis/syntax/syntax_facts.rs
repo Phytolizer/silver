@@ -68,6 +68,8 @@ pub(crate) fn keyword_kind(text: &str) -> SyntaxKind {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::analysis::{
         errors::null_error_reporter::NullErrorReporter, syntax::syntax_tree::SyntaxTree,
     };
@@ -79,7 +81,10 @@ mod tests {
     #[test]
     fn get_text_round_trips() {
         for (kind, text) in SyntaxKind::iter().filter_map(|k| k.get_text().map(|t| (k, t))) {
-            let tokens = SyntaxTree::parse_tokens(text, &mut NullErrorReporter::new());
+            let tokens = SyntaxTree::parse_tokens(
+                Arc::new(text.to_string().into()),
+                &mut NullErrorReporter::new(),
+            );
             assert_eq!(tokens.len(), 2);
             assert_eq!(tokens[0].kind(), kind);
             assert_eq!(tokens[0].text(), text);

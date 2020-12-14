@@ -3,36 +3,36 @@ use crate::analysis::{silver_value::SilverValue, text::text_span::TextSpan};
 use super::{syntax_kind::SyntaxKind, syntax_node::SyntaxNodeExt, syntax_token::SyntaxToken};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ExpressionSyntax<'source> {
+pub enum ExpressionSyntax {
     Literal {
-        literal_token: SyntaxToken<'source>,
+        literal_token: SyntaxToken,
         value: Option<SilverValue>,
     },
     Binary {
-        left: Box<ExpressionSyntax<'source>>,
-        operator: SyntaxToken<'source>,
-        right: Box<ExpressionSyntax<'source>>,
+        left: Box<ExpressionSyntax>,
+        operator: SyntaxToken,
+        right: Box<ExpressionSyntax>,
     },
     Unary {
-        operator: SyntaxToken<'source>,
-        operand: Box<ExpressionSyntax<'source>>,
+        operator: SyntaxToken,
+        operand: Box<ExpressionSyntax>,
     },
     Parenthesized {
-        open_parenthesis_token: SyntaxToken<'source>,
-        expression: Box<ExpressionSyntax<'source>>,
-        close_parenthesis_token: SyntaxToken<'source>,
+        open_parenthesis_token: SyntaxToken,
+        expression: Box<ExpressionSyntax>,
+        close_parenthesis_token: SyntaxToken,
     },
     Name {
-        identifier_token: SyntaxToken<'source>,
+        identifier_token: SyntaxToken,
     },
     Assignment {
-        identifier_token: SyntaxToken<'source>,
-        equals_token: SyntaxToken<'source>,
-        expression: Box<ExpressionSyntax<'source>>,
+        identifier_token: SyntaxToken,
+        equals_token: SyntaxToken,
+        expression: Box<ExpressionSyntax>,
     },
 }
 
-impl<'source> SyntaxNodeExt for ExpressionSyntax<'source> {
+impl SyntaxNodeExt for ExpressionSyntax {
     fn kind(&self) -> SyntaxKind {
         match self {
             ExpressionSyntax::Literal { .. } => SyntaxKind::LiteralExpression,

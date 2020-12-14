@@ -78,7 +78,7 @@ fn main() -> anyhow::Result<()> {
         write!(stdout, "Executing")?;
         stdout.execute(ResetColor)?;
         writeln!(stdout, " '{}'", line.trim())?;
-        let parse_tree = SyntaxTree::parse(line.trim(), &mut error_reporter);
+        let parse_tree = SyntaxTree::parse_str(line.trim(), &mut error_reporter);
         if view_options.show_tree {
             parse_tree.pretty_print(&mut stdout)?;
         }

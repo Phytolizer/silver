@@ -1,25 +1,27 @@
+use std::ops::Index;
+
 use super::{text_line::TextLine, text_span::TextSpan};
 
 pub struct SourceText {
-    text: Vec<char>,
+    text: String,
     lines: Vec<TextLine>,
 }
 
 impl SourceText {
-    fn new(text: Vec<char>) -> Self {
+    fn new(text: String) -> Self {
         Self {
-            lines: Self::parse_lines(&text),
+            lines: Self::parse_lines(text.chars().collect()),
             text,
         }
     }
 
-    fn parse_lines(text: &[char]) -> Vec<TextLine> {
+    fn parse_lines(text: Vec<char>) -> Vec<TextLine> {
         let mut result = vec![];
 
         let mut line_start = 0;
         let mut position = 0;
         while position < text.len() {
-            let line_break_width = Self::get_line_break_width(text, position);
+            let line_break_width = Self::get_line_break_width(&text, position);
             if line_break_width > 0 {
                 result.push(TextLine::new(
                     line_start,
@@ -37,15 +39,11 @@ impl SourceText {
     }
 
     fn get_line_break_width(text: &[char], position: usize) -> usize {
-        let c = text[position];
-        let l = if position + 1 >= text.len() {
-            '\0'
-        } else {
-            text[position + 1]
-        };
-        if c == '\r' && l == '\n' {
+        let current = text[position];
+        let lookahead = text.get(position + 1).cloned().unwrap_or('\0');
+        if current == '\r' && lookahead == '\n' {
             2
-        } else if c == '\r' || c == '\n' {
+        } else if current == '\r' || current == '\n' {
             1
         } else {
             0
@@ -73,8 +71,16 @@ impl SourceText {
         lower - 1
     }
 
-    pub fn to_string(&self, span: TextSpan) -> String {
-        self.text[span].iter().collect()
+    pub fn char_indices(&self) -> impl Iterator<Item = (usize, char)> + '_ {
+        self.text.char_indices()
+    }
+
+    pub fn len(&self) -> usize {
+        self.text.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty()
     }
 }
 
@@ -86,6 +92,14 @@ impl From<String> for SourceText {
 
 impl ToString for SourceText {
     fn to_string(&self) -> String {
-        self.text.iter().collect()
+        self.text.clone()
+    }
+}
+
+impl Index<TextSpan> for SourceText {
+    type Output = str;
+
+    fn index(&self, index: TextSpan) -> &Self::Output {
+        &self.text[index]
     }
 }

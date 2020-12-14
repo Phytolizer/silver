@@ -4,8 +4,8 @@ use super::{expression_syntax::ExpressionSyntax, syntax_kind::SyntaxKind};
 
 // TODO this enum won't be used for a while.
 #[allow(dead_code)]
-pub enum SyntaxNode<'source> {
-    Expression(ExpressionSyntax<'source>),
+pub enum SyntaxNode {
+    Expression(ExpressionSyntax),
 }
 
 pub trait SyntaxNodeExt {
@@ -16,7 +16,7 @@ pub trait SyntaxNodeExt {
     fn span(&self) -> TextSpan;
 }
 
-impl<'source> SyntaxNodeExt for SyntaxNode<'source> {
+impl SyntaxNodeExt for SyntaxNode {
     fn kind(&self) -> SyntaxKind {
         SyntaxKind::Root
     }
