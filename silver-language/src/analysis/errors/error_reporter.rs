@@ -94,6 +94,16 @@ pub trait ErrorReporter {
             },
         ));
     }
+    fn report_variable_already_declared(&mut self, span: TextSpan, name: &str) {
+        let message = format!("The variable '{}' has already been declared.", name);
+        self.report_error(Diagnostic::new(
+            span,
+            message,
+            DiagnosticKind::VariableAlreadyDeclared {
+                name: name.to_string(),
+            },
+        ));
+    }
     fn had_error(&self) -> bool;
     fn errors(&self) -> &[Diagnostic];
     fn clear(&mut self);

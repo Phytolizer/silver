@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::analysis::{silver_value::SilverValue, text::text_span::TextSpan};
 
 use super::{
@@ -7,12 +9,13 @@ use super::{
 
 // TODO this enum won't be used for a while.
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum SyntaxNode {
     Expression(ExpressionSyntax),
     CompilationUnit(CompilationUnitSyntax),
 }
 
-pub trait SyntaxNodeExt {
+pub trait SyntaxNodeExt: Debug {
     fn kind(&self) -> SyntaxKind;
     fn children(&self) -> Vec<&dyn SyntaxNodeExt>;
     fn value(&self) -> Option<&SilverValue>;

@@ -407,6 +407,7 @@ mod tests {
         }
 
         fn assert_at_end(&self) {
+            dbg!(self.nodes.iter().map(|n| n.kind()).collect::<Vec<_>>());
             assert_eq!(self.nodes.len(), self.cursor);
         }
     }
@@ -425,6 +426,7 @@ mod tests {
         let mut e = AssertingIterator::new(tree.root());
 
         if op1precedence >= op2precedence {
+            e.assert_node(SyntaxKind::CompilationUnit);
             e.assert_node(SyntaxKind::BinaryExpression);
             e.assert_node(SyntaxKind::BinaryExpression);
             e.assert_node(SyntaxKind::NameExpression);
@@ -435,7 +437,9 @@ mod tests {
             e.assert_token(op2kind, op2text);
             e.assert_node(SyntaxKind::NameExpression);
             e.assert_token(SyntaxKind::IdentifierToken, "c");
+            e.assert_token(SyntaxKind::EndOfFileToken, "");
         } else {
+            e.assert_node(SyntaxKind::CompilationUnit);
             e.assert_node(SyntaxKind::BinaryExpression);
             e.assert_node(SyntaxKind::NameExpression);
             e.assert_token(SyntaxKind::IdentifierToken, "a");
@@ -446,6 +450,7 @@ mod tests {
             e.assert_token(op2kind, op2text);
             e.assert_node(SyntaxKind::NameExpression);
             e.assert_token(SyntaxKind::IdentifierToken, "c");
+            e.assert_token(SyntaxKind::EndOfFileToken, "");
         }
         e.assert_at_end();
     }
@@ -473,6 +478,7 @@ mod tests {
         let mut e = AssertingIterator::new(tree.root());
 
         if op1precedence >= op2precedence {
+            e.assert_node(SyntaxKind::CompilationUnit);
             e.assert_node(SyntaxKind::BinaryExpression);
             e.assert_node(SyntaxKind::UnaryExpression);
             e.assert_token(op1kind, op1text);
@@ -481,7 +487,9 @@ mod tests {
             e.assert_token(op2kind, op2text);
             e.assert_node(SyntaxKind::NameExpression);
             e.assert_token(SyntaxKind::IdentifierToken, "b");
+            e.assert_token(SyntaxKind::EndOfFileToken, "");
         } else {
+            e.assert_node(SyntaxKind::CompilationUnit);
             e.assert_node(SyntaxKind::UnaryExpression);
             e.assert_token(op1kind, op1text);
             e.assert_node(SyntaxKind::BinaryExpression);
@@ -490,6 +498,7 @@ mod tests {
             e.assert_token(op2kind, op2text);
             e.assert_node(SyntaxKind::NameExpression);
             e.assert_token(SyntaxKind::IdentifierToken, "b");
+            e.assert_token(SyntaxKind::EndOfFileToken, "");
         }
         e.assert_at_end();
     }

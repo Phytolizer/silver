@@ -530,6 +530,7 @@ dependencies = [
  "credibility",
  "crossterm",
  "derive_more",
+ "parking_lot",
  "pretty_assertions",
  "proptest",
  "strum",

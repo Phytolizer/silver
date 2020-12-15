@@ -21,4 +21,7 @@ pub enum DiagnosticKind {
     UndefinedName {
         name: String,
     },
+    VariableAlreadyDeclared {
+        name: String,
+    },
 }

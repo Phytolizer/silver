@@ -5,6 +5,7 @@ use super::{
     syntax_token::SyntaxToken,
 };
 
+#[derive(Debug)]
 pub struct CompilationUnitSyntax {
     expression: ExpressionSyntax,
     end_of_file_token: SyntaxToken,
