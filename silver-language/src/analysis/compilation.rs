@@ -25,12 +25,11 @@ impl<'syntax, 'reporter> Compilation<'syntax, 'reporter> {
         &mut self,
         variables: &mut HashMap<VariableSymbol, SilverValue>,
     ) -> Option<SilverValue> {
-        let mut binder = Binder::new(variables, self.error_reporter);
-        let bound_tree = binder.bind(self.syntax.root());
+        let global_scope = Binder::bind_global_scope(self.syntax.root(), self.error_reporter);
         if self.error_reporter.had_error() {
             return None;
         }
         let mut evaluator = Evaluator::new(variables);
-        Some(evaluator.evaluate(&bound_tree))
+        Some(evaluator.evaluate(global_scope.expression()))
     }
 }

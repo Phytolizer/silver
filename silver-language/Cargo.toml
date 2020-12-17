@@ -9,6 +9,9 @@ edition = "2018"
 derive_more = "0.99"
 strum = "0.20"
 strum_macros = "0.20"
+crossterm = "0.18"
+anyhow = "1.0"
+parking_lot = "0.11"
 
 [dev-dependencies]
 proptest = "0.10"

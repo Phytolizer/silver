@@ -1,3 +1,4 @@
+pub(crate) mod compilation_unit_syntax;
 pub(crate) mod expression_syntax;
 pub mod lexer;
 mod parser;

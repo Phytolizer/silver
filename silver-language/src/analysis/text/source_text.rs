@@ -113,3 +113,16 @@ impl Index<TextSpan> for SourceText {
         &self.text[index]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn includes_last_line() {
+        for &(text, n_lines) in &[(".", 1), (".\r\n", 2), (".\r\n\r\n", 3)] {
+            let source_text = SourceText::from(text.to_string());
+            assert_eq!(n_lines, source_text.lines().len());
+        }
+    }
+}

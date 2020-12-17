@@ -91,7 +91,7 @@ fn main() -> anyhow::Result<()> {
             continue;
         }
         if view_options.show_tree {
-            parse_tree.pretty_print(&mut stdout)?;
+            parse_tree.pretty_print()?;
         }
         let mut compilation = Compilation::new(&parse_tree, &mut error_reporter);
         let value = compilation.evaluate(&mut variables);
@@ -124,7 +124,9 @@ fn main() -> anyhow::Result<()> {
                 writeln!(stdout)?;
             }
         } else {
+            stdout.execute(SetForegroundColor(Color::Magenta))?;
             writeln!(stdout, "{}", value.unwrap())?;
+            stdout.execute(ResetColor)?;
         }
         text_builder.clear();
     }

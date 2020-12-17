@@ -1,35 +1,51 @@
-use std::collections::HashMap;
+use std::sync::Arc;
+
+use parking_lot::RwLock;
 
 use crate::analysis::{
     errors::error_reporter::ErrorReporter,
     silver_value::SilverValue,
-    syntax::{expression_syntax::ExpressionSyntax, syntax_token::SyntaxToken},
+    syntax::{
+        compilation_unit_syntax::CompilationUnitSyntax, expression_syntax::ExpressionSyntax,
+        syntax_token::SyntaxToken,
+    },
     variable_symbol::VariableSymbol,
 };
 
 use super::{
     bound_binary_operator::BoundBinaryOperator, bound_expression::BoundExpression,
+    bound_global_scope::BoundGlobalScope, bound_scope::BoundScope,
     bound_unary_operator::BoundUnaryOperator,
 };
 
-pub(crate) struct Binder<'reporter, 'variables> {
+pub(crate) struct Binder<'reporter> {
     error_reporter: &'reporter mut dyn ErrorReporter,
-    variables: &'variables mut HashMap<VariableSymbol, SilverValue>,
+    scope: Arc<RwLock<BoundScope>>,
 }
 
-impl<'reporter, 'variables> Binder<'reporter, 'variables> {
+impl<'reporter> Binder<'reporter> {
     pub(crate) fn new(
-        variables: &'variables mut HashMap<VariableSymbol, SilverValue>,
+        parent: Option<Arc<RwLock<BoundScope>>>,
         error_reporter: &'reporter mut dyn ErrorReporter,
     ) -> Self {
         Self {
             error_reporter,
-            variables,
+            scope: Arc::new(RwLock::new(BoundScope::new(parent))),
         }
     }
 
     pub(crate) fn bind(&mut self, syntax: &ExpressionSyntax) -> BoundExpression {
         self.bind_expression(syntax)
+    }
+
+    pub(crate) fn bind_global_scope(
+        syntax: &CompilationUnitSyntax,
+        error_reporter: &'reporter mut dyn ErrorReporter,
+    ) -> BoundGlobalScope {
+        let mut binder = Binder::new(None, error_reporter);
+        let expression = binder.bind_expression(syntax.expression());
+        let variables = binder.scope.read().declared_variables().collect::<Vec<_>>();
+        BoundGlobalScope::new(None, variables, expression)
     }
 
     fn bind_expression(&mut self, syntax: &ExpressionSyntax) -> BoundExpression {
@@ -141,7 +157,7 @@ impl<'reporter, 'variables> Binder<'reporter, 'variables> {
 
     fn bind_name_expression(&mut self, identifier_token: &SyntaxToken) -> BoundExpression {
         let name = identifier_token.text();
-        let variable = self.variables.keys().find(|var| var.name() == name);
+        let variable = self.scope.read().try_lookup(name);
         if let Some(variable) = variable {
             BoundExpression::Variable {
                 variable: variable.clone(),
@@ -163,11 +179,11 @@ impl<'reporter, 'variables> Binder<'reporter, 'variables> {
         let name = identifier_token.text();
         let bound_expression = self.bind_expression(expression);
 
-        let existing_variable = self.variables.keys().find(|v| v.name() == name);
-        if let Some(existing_variable) = existing_variable.cloned() {
-            self.variables.remove(&existing_variable);
-        }
         let variable = VariableSymbol::new(name.to_string(), bound_expression.ty());
+        if !self.scope.write().try_declare(variable.clone()) {
+            self.error_reporter
+                .report_variable_already_declared(identifier_token.span(), name);
+        }
         BoundExpression::Assignment {
             variable,
             expression: Box::new(bound_expression),
